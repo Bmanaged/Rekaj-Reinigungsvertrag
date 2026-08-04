@@ -1,0 +1,11 @@
+# Whitelist-Prinzip: standardmässig ALLES ignorieren …
+*
+
+# … und nur die für die Veröffentlichung nötigen Dateien freigeben:
+!index.html
+!README.md
+!.gitignore
+
+# So bleiben sämtliche vertraulichen Dateien im Ordner (AHV-Anmeldung,
+# Verträge, Briefpapier, Bilder, Word-/PDF-Dokumente) garantiert lokal
+# und gelangen NIE ins öffentliche GitHub-Repository.

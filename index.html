@@ -1,0 +1,1541 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reinigungsvertrag – Rekaj Reinigung</title>
+<style>
+:root {
+  --navy: #1B2A4A;
+  --green: #2D7A3A;
+  --gray: #646464;
+  --light: #F5F5F5;
+  --border: #CCCCCC;
+  --font: 'Calibri', 'Segoe UI', Arial, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); font-size: 14px; color: #222; background: #eee; }
+
+/* ── SCREEN LAYOUT ── */
+.page-wrap { max-width: 1000px; margin: 0 auto; background: #fff; min-height: 100vh; }
+
+.app-header {
+  background: var(--navy);
+  color: #fff;
+  padding: 16px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.app-header img { height: 48px; }
+.app-header h1 { font-size: 18px; font-weight: 600; letter-spacing: .5px; }
+
+.tabs {
+  display: flex;
+  border-bottom: 3px solid var(--navy);
+  background: var(--light);
+}
+.tab-btn {
+  padding: 12px 24px;
+  border: none;
+  background: none;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -3px;
+  transition: all .15s;
+}
+.tab-btn.active {
+  color: var(--navy);
+  border-bottom-color: var(--navy);
+  background: #fff;
+}
+.tab-btn:hover:not(.active) { color: var(--navy); background: #e8e8e8; }
+
+.tab-pane { display: none; padding: 28px; }
+.tab-pane.active { display: block; }
+
+/* ── FORM ── */
+.section {
+  margin-bottom: 28px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.section-hdr {
+  background: var(--navy);
+  color: #fff;
+  padding: 10px 16px;
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+.section-hdr .toggle { font-size: 18px; }
+.section-body { padding: 16px; }
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px 24px; }
+.span2 { grid-column: span 2; }
+.span3 { grid-column: span 3; }
+
+label.fl { display: block; font-weight: 600; font-size: 12px; color: var(--gray); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .4px; }
+input[type=text], input[type=number], input[type=date], select, textarea {
+  width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px;
+  font-family: var(--font); font-size: 14px; color: #222;
+  transition: border-color .15s;
+}
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 2px rgba(27,42,74,.12); }
+input[readonly], input[disabled] { background: var(--light); color: var(--gray); }
+
+/* ── SERVICES TABLE ── */
+.svc-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.svc-table th {
+  background: var(--navy); color: #fff; padding: 8px 10px;
+  text-align: left; font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+.svc-table td { padding: 7px 10px; border-bottom: 1px solid #e8e8e8; vertical-align: middle; }
+.svc-table tr:nth-child(even) td { background: #fafafa; }
+.svc-table tr:hover td { background: #f0f4ff; }
+.svc-table .cat-row td {
+  background: #e8f0e8; color: var(--green); font-weight: 700;
+  font-size: 12px; text-transform: uppercase; letter-spacing: .5px; padding: 6px 10px;
+}
+.svc-table input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; }
+.svc-table input[type=number] { width: 80px; text-align: right; }
+.svc-table select { width: 140px; font-size: 12px; padding: 5px 6px; }
+.amt { text-align: right; font-weight: 600; min-width: 90px; }
+.amt-dim { text-align: right; color: var(--gray); font-size: 12px; }
+
+/* ── SUMMARY BOX ── */
+.summary-box {
+  background: linear-gradient(135deg, var(--navy) 0%, #2a4070 100%);
+  color: #fff;
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin-top: 20px;
+}
+.summary-box h3 { font-size: 13px; font-weight: 600; opacity: .7; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 16px; }
+.summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.summary-card { background: rgba(255,255,255,.1); border-radius: 6px; padding: 14px 16px; }
+.summary-card .label { font-size: 11px; opacity: .7; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .4px; }
+.summary-card .value { font-size: 26px; font-weight: 700; }
+.summary-card .sub { font-size: 11px; opacity: .6; margin-top: 4px; }
+.summary-detail { margin-top: 16px; border-top: 1px solid rgba(255,255,255,.2); padding-top: 14px; }
+.summary-row { display: flex; justify-content: space-between; font-size: 12px; padding: 3px 0; opacity: .85; }
+.summary-row.total { font-weight: 700; font-size: 13px; opacity: 1; border-top: 1px solid rgba(255,255,255,.3); padding-top: 8px; margin-top: 4px; }
+
+/* ── ROOMS ── */
+.room-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.room-card { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.room-card-hdr {
+  background: var(--light); border-bottom: 1px solid var(--border);
+  padding: 8px 12px; font-weight: 700; font-size: 13px; color: var(--navy);
+}
+.room-card-body { padding: 10px 12px; }
+.room-task { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; font-size: 13px; }
+.room-task input { margin-top: 2px; flex-shrink: 0; }
+.room-note { font-size: 11px; color: var(--gray); font-style: italic; padding: 4px 0 0 24px; }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 20px; border-radius: 5px; border: none;
+  font-family: var(--font); font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all .15s;
+}
+.btn-primary { background: var(--green); color: #fff; }
+.btn-primary:hover { background: #246830; }
+.btn-navy { background: var(--navy); color: #fff; }
+.btn-navy:hover { background: #152039; }
+.btn-outline { background: transparent; color: var(--navy); border: 2px solid var(--navy); }
+.btn-outline:hover { background: var(--navy); color: #fff; }
+.btn-row { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+
+/* ── VERTRAG (PRINT PREVIEW) ── */
+.contract-wrap {
+  font-family: var(--font);
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #111;
+  max-width: 780px;
+  margin: 0 auto;
+}
+.contract-hdr {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-bottom: 10px;
+  border-bottom: 3px solid var(--navy);
+  margin-bottom: 24px;
+}
+.contract-title { font-size: 26px; font-weight: 700; color: var(--navy); }
+.contract-subtitle { font-size: 12px; color: var(--gray); }
+.contract-footer-line {
+  border-top: 2px solid var(--navy);
+  margin-top: 10px;
+  padding-top: 6px;
+  font-size: 11px;
+  color: var(--gray);
+  text-align: center;
+}
+.c-section { margin-bottom: 22px; page-break-inside: avoid; }
+.c-hdr {
+  font-size: 14px; font-weight: 700; color: var(--navy);
+  border-bottom: 2px solid var(--navy);
+  padding-bottom: 4px; margin-bottom: 10px;
+}
+.c-ahdr {
+  font-size: 18px; font-weight: 700; color: var(--navy);
+  border-bottom: 3px solid var(--green);
+  padding-bottom: 6px; margin: 32px 0 14px;
+}
+.c-p { margin-bottom: 8px; }
+.c-bullet { margin-bottom: 5px; padding-left: 18px; text-indent: -18px; }
+.c-bullet::before { content: "• "; color: var(--green); font-weight: 700; }
+
+.parties-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.parties-card { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.parties-card-hdr { background: var(--navy); color: #fff; font-weight: 700; font-size: 12px; padding: 6px 10px; letter-spacing: 0.03em; }
+.parties-tbl { width: 100%; border-collapse: collapse; }
+.parties-tbl td { padding: 5px 9px; border-bottom: 1px solid var(--border); font-size: 13px; word-break: break-word; }
+.parties-tbl tr:last-child td { border-bottom: none; }
+.parties-tbl .lbl { background: var(--light); font-weight: 600; width: 38%; white-space: nowrap; color: var(--navy); }
+
+.svc-print-tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 10px 0; }
+.svc-print-tbl th { background: var(--navy); color: #fff; padding: 7px 10px; text-align: left; }
+.svc-print-tbl td { padding: 6px 10px; border-bottom: 1px solid #e0e0e0; }
+.svc-print-tbl .cat { background: #e8f0e8; color: var(--green); font-weight: 700; font-size: 11.5px; text-transform: uppercase; }
+.svc-print-tbl .total-row td { border-top: 2px solid var(--navy); font-weight: 700; background: var(--light); }
+.svc-print-tbl .r { text-align: right; }
+
+.check-tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.check-tbl td { padding: 5px 8px; border-bottom: 1px solid #eee; }
+.check-tbl .room-hdr { background: var(--navy); color: #fff; font-weight: 700; font-size: 12px; }
+.check-tbl .sym { width: 30px; text-align: center; color: var(--gray); }
+.check-tbl .note { font-style: italic; color: #888; font-size: 11.5px; }
+
+.zone-tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 10px 0; }
+.zone-tbl th { background: var(--navy); color: #fff; padding: 7px 10px; text-align: left; }
+.zone-tbl td { padding: 7px 10px; border-bottom: 1px solid #e0e0e0; vertical-align: top; }
+.zone-tbl tr:nth-child(even) td { background: var(--light); }
+
+.sig-area { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px; }
+.sig-line { border-top: 1px solid #555; margin-top: 40px; padding-top: 6px; font-size: 12px; color: var(--gray); }
+
+/* ── ABSCHLUSS MODAL ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6); z-index: 9999;
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: #fff; border-radius: 10px; max-width: 580px; width: 92%;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.35); overflow: hidden;
+}
+.modal-hdr { background: var(--navy); color: #fff; padding: 20px 28px; font-size: 17px; font-weight: 700; }
+.modal-body { padding: 24px 28px; }
+.modal-footer { padding: 14px 28px 20px; display: flex; gap: 12px; justify-content: flex-end; border-top: 1px solid var(--border); }
+.signed-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: #e8f5e9; color: #1a5c27; border: 1.5px solid var(--green);
+  border-radius: 20px; padding: 6px 14px; font-size: 13px; font-weight: 600;
+}
+
+/* ── PRINT ── */
+@media print {
+  body { background: #fff; font-size: 12px; }
+  .page-wrap { max-width: none; box-shadow: none; }
+  .app-header, .tabs, #tab-erfassung, .btn-row, .modal-overlay { display: none !important; }
+  #tab-vertrag { display: block !important; padding: 0; }
+  .contract-wrap { max-width: none; }
+  .page-break { page-break-before: always; }
+}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+<!-- APP HEADER -->
+<div class="app-header">
+  <img src="data:image/jpeg;base64,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" alt="Rekaj Reinigung">
+  <h1>Reinigungsvertrag – Vorlage</h1>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('erfassung')">① Vertrag konfigurieren</button>
+  <button class="tab-btn" onclick="switchTab('vertrag')">② Vertragsvorschau / Drucken</button>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     TAB 1: KONFIGURATION
+     ════════════════════════════════════════════════════════ -->
+<div id="tab-erfassung" class="tab-pane active">
+
+  <!-- KUNDENDATEN -->
+  <div class="section">
+    <div class="section-hdr" onclick="toggleSection(this)">
+      <span>1. Kundendaten</span><span class="toggle">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="grid2">
+        <div>
+          <label class="fl">Name / Firma *</label>
+          <input type="text" id="k_name" placeholder="Max Mustermann / Musterfirma GmbH" oninput="recalc()">
+        </div>
+        <div>
+          <label class="fl">Strasse / Nr. *</label>
+          <input type="text" id="k_strasse" placeholder="Musterstrasse 1" oninput="recalc()">
+        </div>
+        <div>
+          <label class="fl">PLZ</label>
+          <input type="text" id="k_plz" placeholder="3600" oninput="recalc()">
+        </div>
+        <div>
+          <label class="fl">Ort</label>
+          <input type="text" id="k_ort" placeholder="Thun" oninput="recalc()">
+        </div>
+        <div>
+          <label class="fl">Telefon</label>
+          <input type="text" id="k_tel" placeholder="+41 79 000 00 00" oninput="recalc()">
+        </div>
+        <div>
+          <label class="fl">E-Mail</label>
+          <input type="text" id="k_email" placeholder="kunde@beispiel.ch" oninput="recalc()">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EINSATZ -->
+  <div class="section">
+    <div class="section-hdr" onclick="toggleSection(this)">
+      <span>2. Einsatz &amp; Vertragsdaten</span><span class="toggle">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="grid3">
+        <div>
+          <label class="fl">Leistungsort (Adresse)</label>
+          <input type="text" id="e_ort" placeholder="wie Kundenadresse" oninput="recalc()">
+        </div>
+        <div>
+          <label class="fl">Vertragsbeginn</label>
+          <input type="date" id="e_beginn" oninput="recalc()">
+        </div>
+        <div>
+          <label class="fl">Laufzeit</label>
+          <select id="e_laufzeit" onchange="recalc()">
+            <option value="unbefristet">Unbefristet</option>
+            <option value="befristet">Befristet</option>
+            <option value="einmalig">Einmalig</option>
+          </select>
+        </div>
+        <div>
+          <label class="fl">Hauptturnus (Reinigung)</label>
+          <select id="e_turnus" onchange="recalc()">
+            <option value="weekly">Wöchentlich</option>
+            <option value="14days">Alle 14 Tage</option>
+            <option value="monthly">Monatlich</option>
+            <option value="daily">Täglich</option>
+            <option value="once">Einmalig / nach Bedarf</option>
+          </select>
+        </div>
+        <div>
+          <label class="fl">Wochentag(e)</label>
+          <input type="text" id="e_wochentag" placeholder="z. B. Mittwoch / Sonntag" oninput="recalc()">
+        </div>
+        <div>
+          <label class="fl">Kündigungsfrist (Monate)</label>
+          <input type="number" id="e_kuendfrist" value="3" min="1" max="12" oninput="recalc()">
+        </div>
+        <div>
+          <label class="fl">Rechnungsstellung</label>
+          <select id="e_rechnung" onchange="recalc()">
+            <option value="monthly">Monatlich</option>
+            <option value="pereinsatz">Pro Einsatz</option>
+            <option value="hours">Nach Stundenaufwand</option>
+          </select>
+        </div>
+        <div>
+          <label class="fl">Zahlungsfrist (Tage)</label>
+          <input type="number" id="e_zahlfrist" value="10" min="5" max="60" oninput="recalc()">
+        </div>
+        <div>
+          <label class="fl">Exklusivrecht</label>
+          <select id="e_exklusiv" onchange="recalc()">
+            <option value="ja">Ja – exklusiv</option>
+            <option value="nein">Nein – nicht exklusiv</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAHRT / ZONE -->
+  <div class="section">
+    <div class="section-hdr" onclick="toggleSection(this)">
+      <span>3. Einsatzgebiet &amp; Fahrtentschädigung</span><span class="toggle">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="grid2">
+        <div>
+          <label class="fl">Zone</label>
+          <select id="f_zone" onchange="updateZoneFields(); recalc();">
+            <option value="1">Zone 1 – bis 15 km (CHF 10.00 Pauschale)</option>
+            <option value="2">Zone 2 – 15–30 km (CHF 20.00 Pauschale)</option>
+            <option value="3">Zone 3 – 30–45 km (CHF 30.00 Pauschale)</option>
+            <option value="4">Zone 4 – 45–60 km (CHF 40.00 Pauschale)</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;padding-top:22px;">
+          <span style="font-size:13px;color:var(--gray)" id="f_info">Fahrtpauschale CHF 10.00 pro Einsatz.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEISTUNGEN -->
+  <div class="section">
+    <div class="section-hdr" onclick="toggleSection(this)">
+      <span>4. Leistungsauswahl &amp; Preisberechnung</span><span class="toggle">▾</span>
+    </div>
+    <div class="section-body">
+      <p style="font-size:12px; color:var(--gray); margin-bottom:12px;">
+        Aktiviere die gewünschten Leistungen, passe Menge / Stunden an und wähle ggf. einen abweichenden Turnus pro Leistung.
+        Die Beträge werden automatisch berechnet.
+      </p>
+      <table class="svc-table">
+        <thead>
+          <tr>
+            <th style="width:36px">✓</th>
+            <th>Leistung</th>
+            <th>Code</th>
+            <th style="width:145px">Eigener Turnus</th>
+            <th style="width:90px">Menge / Std</th>
+            <th style="width:90px">Ansatz CHF</th>
+            <th style="width:100px">Pro Einsatz</th>
+            <th style="width:100px">Pro Monat</th>
+          </tr>
+        </thead>
+        <tbody id="svc-tbody">
+          <!-- filled by JS -->
+        </tbody>
+      </table>
+
+      <!-- Zusatzstunden -->
+      <div style="margin-top:16px; padding:12px; background:var(--light); border-radius:5px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+        <div>
+          <label class="fl">Ansatz Zusatzstunden CHF/h</label>
+          <input type="number" id="z_ansatz" value="45" min="0" step="5" oninput="recalc()">
+        </div>
+        <div>
+          <label class="fl">Mehrwertsteuer</label>
+          <select id="z_mwst" onchange="recalc()">
+            <option value="0">Keine (Kleinunternehmer)</option>
+            <option value="8.1">8.1% MWST</option>
+          </select>
+        </div>
+        <div>
+          <label class="fl">Vergütungsart</label>
+          <select id="z_vergtyp" onchange="recalc()">
+            <option value="pauschale">Pauschalbetrag</option>
+            <option value="stunden">Stundenhonorar</option>
+            <option value="monat">Monatliche Vergütung</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- SUMMARY BOX -->
+      <div class="summary-box">
+        <h3>Berechnete Vergütung</h3>
+        <div class="summary-grid">
+          <div class="summary-card">
+            <div class="label">Standardeinsatz (Hauptturnus)</div>
+            <div class="value" id="s_pereinsatz">CHF 0.00</div>
+            <div class="sub" id="s_pereinsatz_sub">–</div>
+          </div>
+          <div class="summary-card">
+            <div class="label">Monatliche Gesamtkosten</div>
+            <div class="value" id="s_permonat">CHF 0.00</div>
+            <div class="sub" id="s_permonat_sub">–</div>
+          </div>
+        </div>
+        <div class="summary-detail" id="s_detail"></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="switchTab('vertrag')">② Vertragsvorschau öffnen →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RAUMCHECKLISTE -->
+  <div class="section">
+    <div class="section-hdr" onclick="toggleSection(this)">
+      <span>5. Raumcheckliste (Anhang 1)</span><span class="toggle">▾</span>
+    </div>
+    <div class="section-body">
+      <p style="font-size:12px;color:var(--gray);margin-bottom:14px;">
+        Aktiviere die gewünschten Aufgaben pro Raum. Diese Liste erscheint als Anhang 1 im Vertrag.
+      </p>
+      <div class="room-grid" id="room-grid"><!-- filled by JS --></div>
+
+      <!-- Bemerkungen -->
+      <div style="margin-top:16px;">
+        <label class="fl">Sonderwünsche / ergänzende Bemerkungen</label>
+        <textarea id="r_bemerkungen" rows="4" placeholder="z. B. Einmal pro Monat Backofenreinigung nach Aufwand; Fensterputzen (innen) alle 3 Monate; usw." oninput="recalc()" style="width:100%;"></textarea>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /tab-erfassung -->
+
+
+<!-- ════════════════════════════════════════════════════════
+     TAB 2: VERTRAGSVORSCHAU
+     ════════════════════════════════════════════════════════ -->
+<div id="tab-vertrag" class="tab-pane">
+  <div class="btn-row" id="pre-sign-btns" style="margin-bottom:20px;">
+    <button class="btn btn-navy" onclick="window.print()">🖨 Vertrag drucken</button>
+    <button class="btn btn-primary" onclick="showAbschlussModal()">✅ Abschluss / Signatur</button>
+    <button class="btn btn-outline" id="btn-back-config" onclick="switchTab('erfassung')">← Zurück zur Konfiguration</button>
+  </div>
+  <div class="contract-wrap" id="contract-out">
+    <!-- generated by JS -->
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     ABSCHLUSS-MODAL
+     ═══════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="abschluss-modal" onclick="closeModalIfBg(event)">
+  <div class="modal-box" style="max-width:620px">
+
+    <!-- ── Panel 0: Auswahl ── -->
+    <div id="modal-panel-auswahl">
+      <div class="modal-hdr">Vertragsabschluss – Wie möchte der Kunde bestätigen?</div>
+      <div class="modal-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px">
+          <button onclick="showSofortPanel()" style="border:2px solid var(--navy);border-radius:10px;background:#f0f4ff;padding:24px 16px;cursor:pointer;text-align:center;transition:background 0.15s" onmouseover="this.style.background='#dde6f8'" onmouseout="this.style.background='#f0f4ff'">
+            <div style="font-size:32px;margin-bottom:10px">✅</div>
+            <div style="font-weight:700;color:var(--navy);font-size:15px;margin-bottom:6px">Sofort unterschreiben</div>
+            <div style="font-size:12.5px;color:var(--gray);line-height:1.5">Kunde gibt Namen ein und bestätigt direkt hier am Gerät. Vertrag gilt sofort als abgeschlossen.</div>
+          </button>
+          <button onclick="showEmailPanel()" style="border:2px solid var(--green);border-radius:10px;background:#f0fbf0;padding:24px 16px;cursor:pointer;text-align:center;transition:background 0.15s" onmouseover="this.style.background='#d8f0db'" onmouseout="this.style.background='#f0fbf0'">
+            <div style="font-size:32px;margin-bottom:10px">✉️</div>
+            <div style="font-weight:700;color:var(--green);font-size:15px;margin-bottom:6px">Bestätigung per E-Mail</div>
+            <div style="font-size:12.5px;color:var(--gray);line-height:1.5">Kunde erhält den Vertrag per E-Mail und bestätigt durch Antwort. Ideal wenn keine Zeit für direkte Signatur.</div>
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeAbschlussModal()">Abbrechen</button>
+      </div>
+    </div>
+
+    <!-- ── Panel 1: Sofort unterschreiben ── -->
+    <div id="modal-panel-sofort" style="display:none">
+      <div class="modal-hdr">✅ Sofort unterschreiben</div>
+      <div class="modal-body">
+        <div class="grid2" style="margin-bottom:18px">
+          <div>
+            <label class="fl">Vollständiger Name Auftraggeber/in *</label>
+            <input type="text" id="sig_name" placeholder="Vor- und Nachname" oninput="updateBestaetigenBtn()">
+          </div>
+          <div>
+            <label class="fl">Datum &amp; Uhrzeit</label>
+            <input type="text" id="sig_datum" readonly style="background:var(--light);color:var(--gray)">
+          </div>
+        </div>
+        <label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;font-size:14px;line-height:1.55;margin-bottom:18px;padding:14px;background:#f0f4ff;border-radius:6px;border:1px solid #c0cce8">
+          <input type="checkbox" id="sig_confirm" style="width:18px;height:18px;margin-top:3px;flex-shrink:0" onchange="updateBestaetigenBtn()">
+          <span>Ich habe den Reinigungsvertrag vollständig gelesen und akzeptiere alle Bedingungen hiermit verbindlich.</span>
+        </label>
+        <div style="font-size:11.5px;color:var(--gray);background:var(--light);padding:10px 14px;border-radius:4px;line-height:1.55">
+          Nach der Bestätigung wird der Vertrag als abgeschlossen markiert. Name + Datum erscheinen im Vertrag.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="showAuswahlPanel()">← Zurück</button>
+        <button class="btn btn-primary" id="btn-bestaetigen" disabled onclick="abschlussBestaetigen()">✅ Verbindlich akzeptieren</button>
+      </div>
+    </div>
+
+    <!-- ── Panel 2: Bestätigung per E-Mail ── -->
+    <div id="modal-panel-email" style="display:none">
+      <div class="modal-hdr">✉️ Bestätigung per E-Mail senden</div>
+      <div class="modal-body">
+        <p style="margin-bottom:18px;line-height:1.55;color:#333;font-size:13.5px">
+          Der Kunde erhält eine E-Mail mit dem Vertrag und einer Bestätigungsanfrage. Sobald er antwortet, gilt der Vertrag als angenommen.
+        </p>
+        <div class="grid2" style="margin-bottom:18px">
+          <div>
+            <label class="fl">Name Auftraggeber/in *</label>
+            <input type="text" id="email_sig_name" placeholder="Vor- und Nachname">
+          </div>
+          <div>
+            <label class="fl">E-Mail-Adresse Kunde *</label>
+            <input type="email" id="email_sig_email" placeholder="kunde@beispiel.ch">
+          </div>
+        </div>
+        <div style="font-size:11.5px;color:var(--gray);background:#fffbea;padding:12px 14px;border-radius:4px;line-height:1.6;border:1px solid #e8d87a">
+          💡 Nach Klick auf «E-Mail vorbereiten» öffnet sich dein E-Mail-Programm mit dem vorbereiteten Text. PDF des Vertrags bitte noch manuell anhängen, bevor du die E-Mail absendest.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="showAuswahlPanel()">← Zurück</button>
+        <button class="btn btn-primary" onclick="sendeBestaettigungsanfrage()">✉️ E-Mail vorbereiten &amp; senden</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</div><!-- /page-wrap -->
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════════
+const SERVICES = [
+  { cat: 'Reinigung (Stundenansatz)' },
+  { id:'REIP', name:'Reinigung Privat', rate:45, unit:'h', type:'hourly', default:true },
+  { id:'REGE', name:'Reinigung Geschäftsräume', rate:55, unit:'h', type:'hourly', default:false },
+  { id:'REIFE', name:'Abnahmereinigung Ferienwohnung', rate:55, unit:'h', type:'hourly', default:false },
+  { cat: 'Wäsche- & Bettwäscheservice' },
+  { id:'BESD', name:'Bettwäsche-Service Doppelbett', rate:45, unit:'Wechsel', type:'fixed', default:false },
+  { id:'BESE', name:'Bettwäsche-Service Einzelbett', rate:25, unit:'Wechsel', type:'fixed', default:false },
+  { id:'WAE6', name:'Wäsche bis 6 kg (inkl. Trocknen & Zusammenlegen)', rate:35, unit:'Ladung', type:'fixed', default:false },
+  { cat: 'Auslagen & Material' },
+  { id:'REIM', name:'Reinigungsmittel (Pauschale pro Einsatz)', rate:10, unit:'Einsatz', type:'fixed', default:true, fixed:1 },
+];
+
+const ZONES = {
+  1: { label:'Zone 1 – bis 15 km', flat:10 },
+  2: { label:'Zone 2 – 15–30 km', flat:20 },
+  3: { label:'Zone 3 – 30–45 km', flat:30 },
+  4: { label:'Zone 4 – 45–60 km', flat:40 },
+};
+
+const TURNUS_OPTS = [
+  { v:'main',   l:'= Hauptturnus' },
+  { v:'weekly', l:'Wöchentlich' },
+  { v:'14days', l:'Alle 14 Tage' },
+  { v:'monthly',l:'Monatlich' },
+  { v:'daily',  l:'Täglich' },
+  { v:'once',   l:'Einmalig / Bedarf' },
+];
+
+const MONTHLY = {
+  daily:22, weekly:52/12, '14days':26/12, monthly:1, once:0, main:null
+};
+
+const ROOMS = [
+  { name:'Wohnzimmer / Wohn-Esszimmer', tasks:[
+    'Abstauben aller zugänglichen Oberflächen und Möbel',
+    'Feuchtes Abwischen der Oberflächen und Tische',
+    'Staubsaugen der Böden und Teppiche',
+    'Feuchtes Aufnehmen der Hartböden',
+    'Reinigung der Fenstersimse (innen)',
+    'Entleeren der Abfalleimer',
+  ], extras:[
+    'Fensterputzen (innen) – nach Aufwand',
+    'Polstermöbel absaugen – nach Aufwand',
+  ]},
+  { name:'Küche', tasks:[
+    'Reinigung der zugänglichen Arbeitsflächen',
+    'Reinigung des Küchentischs und Stühle',
+    'Abstauben der Geräteoberflächen (aussen)',
+    'Reinigung des Herds / Kochfelds (zugänglich)',
+    'Reinigung der Spüle und des Wasserhahns',
+    'Staubsaugen und feuchtes Aufnehmen des Bodens',
+    'Entleeren des Abfalleimers',
+  ], extras:[
+    'Backofenreinigung (innen) – nach Aufwand',
+    'Kühlschrank ausräumen / reinigen – nach Aufwand',
+  ]},
+  { name:'Badezimmer / WC', tasks:[
+    'Reinigung der Badewanne / Dusche inkl. Armaturen',
+    'Reinigung der Toilette (innen und aussen)',
+    'Reinigung des Waschbeckens und Wasserhahns',
+    'Abstauben und Abwischen der Oberflächen',
+    'Reinigung des Spiegelschranks (aussen)',
+    'Staubsaugen und feuchtes Aufnehmen des Bodens',
+    'Austausch von Handtüchern (falls bereitgestellt)',
+    'Auffüllen von Seife / WC-Papier (falls bereitgestellt)',
+  ], extras:[]},
+  { name:'Schlafzimmer', tasks:[
+    'Abstauben und Abwischen der Oberflächen',
+    'Staubsaugen der Böden',
+    'Feuchtes Aufnehmen der Hartböden',
+    'Wechsel und Neubeziehen der Bettwäsche',
+  ], extras:['Bettwäsche waschen – siehe Anhang 2']},
+  { name:'Gästezimmer', tasks:[
+    'Abstauben der zugänglichen Oberflächen',
+    'Staubsaugen der Böden',
+    'Feuchtes Aufnehmen der Hartböden',
+  ], extras:[
+    'Bei Gästebelegung: Zusatzaufwand separat verrechnet',
+    'Bettwäsche wechseln bei Belegung – nach Absprache',
+  ]},
+  { name:'Gang / Eingang / Treppe', tasks:[
+    'Abstauben der Oberflächen und Geländer',
+    'Staubsaugen der Böden und Teppiche',
+    'Feuchtes Aufnehmen der Hartböden',
+    'Reinigung der Eingangstür (innen)',
+  ], extras:[]},
+  { name:'Büro / Geschäftsräume', tasks:[
+    'Abstauben aller zugänglichen Oberflächen und Tische',
+    'Reinigung der Geräteoberflächen (Bildschirme nur trocken)',
+    'Staubsaugen und feuchtes Aufnehmen der Böden',
+    'Badezimmer / WC reinigen (falls vorhanden)',
+    'Entleeren der Abfalleimer / Altpapier',
+  ], extras:['Obere Etage: nur bei Benutzung (Toilette kontrolliert)']},
+  { name:'Garage', tasks:[
+    'Fegen / Staubsaugen des Garagenbodens',
+    'Abstauben zugänglicher Oberflächen',
+    'Entleeren des Abfalleimers',
+  ], extras:['Nur wenn ausdrücklich vereinbart (optionale Leistung)']},
+  { name:'Ferienwohnung / Abnahmeobjekt', tasks:[
+    'Grundreinigung aller Räume',
+    'Küche: vollständige Reinigung inkl. Geräte',
+    'Bad/WC: vollständige Reinigung',
+    'Staubsaugen und feuchtes Aufnehmen aller Böden',
+    'Abnahme-Checkliste nach Absprache',
+  ], extras:['Abnahmereinigung nach Stundenansatz CHF 55/h']},
+];
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+function init() {
+  buildSvcTable();
+  buildRoomGrid();
+  // default date = today
+  document.getElementById('e_beginn').value = new Date().toISOString().slice(0,10);
+  recalc();
+}
+
+function buildSvcTable() {
+  const tbody = document.getElementById('svc-tbody');
+  tbody.innerHTML = '';
+  SERVICES.forEach((s,i) => {
+    if (s.cat) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td colspan="8" class="cat-row">\u25B8 ${s.cat}</td>`;
+      tbody.appendChild(tr);
+      return;
+    }
+    const turnusSel = TURNUS_OPTS.map(o =>
+      `<option value="${o.v}">${o.l}</option>`
+    ).join('');
+    const fixed = s.fixed ? 'readonly' : '';
+    const def = s.default ? 'checked' : '';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="text-align:center">
+        <input type="checkbox" id="c_${s.id}" ${def} onchange="recalc()">
+      </td>
+      <td>${s.name}</td>
+      <td style="font-size:11px;color:var(--gray)">${s.id}</td>
+      <td>
+        <select id="t_${s.id}" onchange="recalc()" style="width:100%;">
+          ${turnusSel}
+        </select>
+      </td>
+      <td>
+        <input type="number" id="q_${s.id}" value="${s.fixed || 1}" min="0" step="0.5" ${fixed}
+               oninput="recalc()" style="width:80px;text-align:right">
+        <span style="font-size:11px;color:var(--gray)"> ${s.unit}</span>
+      </td>
+      <td class="amt-dim">${s.rate.toFixed(2)}</td>
+      <td class="amt" id="e_${s.id}">—</td>
+      <td class="amt" id="m_${s.id}">—</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function buildRoomGrid() {
+  const grid = document.getElementById('room-grid');
+  grid.innerHTML = '';
+  ROOMS.forEach((room, ri) => {
+    const card = document.createElement('div');
+    card.className = 'room-card';
+    let tasksHtml = room.tasks.map((t,ti) => `
+      <div class="room-task">
+        <input type="checkbox" id="r_${ri}_${ti}" checked>
+        <label for="r_${ri}_${ti}">${t}</label>
+      </div>`).join('');
+    let extrasHtml = room.extras.map((e, ei) => `
+      <div class="room-task" style="opacity:0.75">
+        <input type="checkbox" id="r_${ri}_e${ei}">
+        <label for="r_${ri}_e${ei}" style="font-style:italic;color:var(--gray)">${e}</label>
+      </div>`).join('');
+    card.innerHTML = `
+      <div class="room-card-hdr">${room.name}</div>
+      <div class="room-card-body">${tasksHtml}${extrasHtml}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// CALCULATION
+// ═══════════════════════════════════════════════════════════
+function getMonthlyFactor(v) {
+  if (v === 'main') v = document.getElementById('e_turnus').value;
+  return MONTHLY[v] ?? 0;
+}
+
+function calcTravel() {
+  const zone = parseInt(document.getElementById('f_zone').value);
+  return ZONES[zone].flat;
+}
+
+function recalc() {
+  const mainTurnus = document.getElementById('e_turnus').value;
+  let totalEinsatz = 0, totalMonat = 0;
+  const rows = [];
+
+  SERVICES.forEach(s => {
+    if (s.cat) return;
+    const checked = document.getElementById('c_' + s.id)?.checked;
+    const qty = parseFloat(document.getElementById('q_' + s.id)?.value) || 0;
+    const turnusVal = document.getElementById('t_' + s.id)?.value || 'main';
+    const factor = getMonthlyFactor(turnusVal);
+    const turnusLabel = turnusVal === 'main'
+      ? (TURNUS_OPTS.find(o=>o.v===mainTurnus)?.l || '—')
+      : (TURNUS_OPTS.find(o=>o.v===turnusVal)?.l || '—');
+
+    if (!checked) {
+      document.getElementById('e_' + s.id).textContent = '—';
+      document.getElementById('m_' + s.id).textContent = '—';
+      return;
+    }
+    const amtEinsatz = qty * s.rate;
+    const amtMonat = amtEinsatz * factor;
+    totalEinsatz += amtEinsatz;
+    totalMonat += amtMonat;
+
+    document.getElementById('e_' + s.id).textContent = fmtCHF(amtEinsatz);
+    document.getElementById('m_' + s.id).textContent = fmtCHF(amtMonat);
+    rows.push({ name: s.name, turnusLabel, qty, unit: s.unit, rate: s.rate, amtEinsatz, amtMonat });
+  });
+
+  // Travel
+  const travelAmt = calcTravel();
+  const mainFactor = getMonthlyFactor(mainTurnus);
+  totalEinsatz += travelAmt;
+  totalMonat += travelAmt * mainFactor;
+
+  // MWST
+  const mwst = parseFloat(document.getElementById('z_mwst').value) || 0;
+  const totalEinsatzBrutto = totalEinsatz * (1 + mwst/100);
+  const totalMonatBrutto = totalMonat * (1 + mwst/100);
+
+  // Labels
+  const turnusLabels = { daily:'täglich', weekly:'wöchentlich', '14days':'alle 14 Tage', monthly:'monatlich', once:'einmalig' };
+  const tLabel = turnusLabels[mainTurnus] || '—';
+
+  document.getElementById('s_pereinsatz').textContent = fmtCHF(totalEinsatzBrutto);
+  document.getElementById('s_pereinsatz_sub').textContent = `Standardeinsatz (${tLabel})`;
+  document.getElementById('s_permonat').textContent = fmtCHF(totalMonatBrutto);
+  document.getElementById('s_permonat_sub').textContent =
+    mwst > 0 ? `inkl. ${mwst}% MWST` : 'exkl. MWST (Kleinunternehmer)';
+
+  // Detail
+  let det = rows.map(r =>
+    `<div class="summary-row">
+      <span>${r.name} (${r.turnusLabel})</span>
+      <span>${fmtCHF(r.amtMonat)}/Mt.</span>
+    </div>`).join('');
+  det += `<div class="summary-row">
+    <span>Fahrtentschädigung (${tLabel})</span>
+    <span>${fmtCHF(travelAmt * mainFactor)}/Mt.</span>
+  </div>`;
+  if (mwst > 0) det += `<div class="summary-row"><span>MWST ${mwst}%</span><span>+${fmtCHF(totalMonat * mwst/100)}</span></div>`;
+  det += `<div class="summary-row total"><span>TOTAL PRO MONAT</span><span>${fmtCHF(totalMonatBrutto)}</span></div>`;
+  document.getElementById('s_detail').innerHTML = det;
+
+  // Store for contract generation
+  window._calc = { rows, travelAmt, totalEinsatz, totalMonat, totalEinsatzBrutto, totalMonatBrutto, mwst, mainTurnus, mainFactor };
+
+  // Live update contract if visible
+  if (document.getElementById('tab-vertrag').classList.contains('active')) {
+    generateContract();
+  }
+}
+
+function fmtCHF(n) {
+  return 'CHF\u00A0' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, "'");
+}
+
+function fmtDate(iso) {
+  if (!iso) return '___________';
+  const [y,m,d] = iso.split('-');
+  return `${d}.${m}.${y}`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// ZONE FIELDS
+// ═══════════════════════════════════════════════════════════
+function updateZoneFields() {
+  const zone = parseInt(document.getElementById('f_zone').value);
+  const z = ZONES[zone];
+  const infos = {
+    1:'Fahrtpauschale CHF 10.00 pro Einsatz.',
+    2:'Fahrtpauschale CHF 20.00 pro Einsatz.',
+    3:'Fahrtpauschale CHF 30.00 pro Einsatz. Nur nach vorgängiger Absprache.',
+    4:'Fahrtpauschale CHF 40.00 pro Einsatz. Nur nach ausdrücklicher Vereinbarung.',
+  };
+  document.getElementById('f_info').textContent = infos[zone];
+}
+
+// ═══════════════════════════════════════════════════════════
+// CONTRACT GENERATION
+// ═══════════════════════════════════════════════════════════
+function generateContract() {
+  const g = id => document.getElementById(id)?.value || '';
+  const c = window._calc || {};
+
+  const kName    = g('k_name')    || '___________________________';
+  const kStr     = g('k_strasse') || '___________________________';
+  const kPlz     = g('k_plz')    || '____';
+  const kOrt     = g('k_ort')    || '___________';
+  const kTel     = g('k_tel')    || '___________________________';
+  const kEmail   = g('k_email')  || '___________________________';
+  const eOrt     = g('e_ort')    || (kStr + ', ' + kPlz + ' ' + kOrt) || '___________________________';
+  const eBeginn  = fmtDate(g('e_beginn'));
+  const eTurnus  = g('e_turnus');
+  const eWtag    = g('e_wochentag') || '___________';
+  const eKfrist  = g('e_kuendfrist') || '3';
+  const eRechnung= g('e_rechnung');
+  const eZfrist  = g('e_zahlfrist') || '10';
+  const eExkl    = g('e_exklusiv');
+  const eLaufzeit= g('e_laufzeit');
+  const zAnsatz  = g('z_ansatz') || '45';
+  const zVergtyp = g('z_vergtyp');
+  const mwstRate = parseFloat(g('z_mwst')) || 0;
+  const bemerkungen = g('r_bemerkungen');
+
+  const turnusText = {
+    weekly:'wöchentlich', '14days':'alle 14 Tage', monthly:'monatlich',
+    daily:'täglich', once:'einmalig / nach Bedarf'
+  }[eTurnus] || eTurnus;
+
+  const vergText = {
+    pauschale:'Pauschalbetrag', stunden:'Stundenhonorar', monat:'Monatliche Vergütung'
+  }[zVergtyp] || 'Pauschalbetrag';
+
+  const rechnText = {
+    monthly:'Monatlich', pereinsatz:'Pro Einsatz', hours:'Nach Stundenaufwand'
+  }[eRechnung] || 'Monatlich';
+
+  // Build services table
+  let svcRows = '';
+  SERVICES.forEach(s => {
+    if (s.cat) {
+      svcRows += `<tr><td colspan="5" class="cat">${s.cat}</td></tr>`;
+      return;
+    }
+    const checked = document.getElementById('c_' + s.id)?.checked;
+    const qty = parseFloat(document.getElementById('q_' + s.id)?.value) || 0;
+    const tv = document.getElementById('t_' + s.id)?.value || 'main';
+    const tLabel = tv === 'main' ? turnusText : (TURNUS_OPTS.find(o=>o.v===tv)?.l || tv);
+    const sym = checked ? '☑' : '☐';
+    const amt = checked ? fmtCHF(qty * s.rate) : '—';
+    const mAmt = checked ? fmtCHF(qty * s.rate * getMonthlyFactor(tv)) : '—';
+    svcRows += `<tr>
+      <td style="text-align:center;font-size:14px">${sym}</td>
+      <td>${s.name}</td>
+      <td style="text-align:center">${s.id}</td>
+      <td style="text-align:right">${checked ? qty + ' ' + s.unit : '—'}</td>
+      <td class="r">${fmtCHF(s.rate)}</td>
+      <td class="r">${amt}</td>
+      <td class="r">${mAmt}</td>
+    </tr>`;
+  });
+  // Travel row
+  const zone = parseInt(g('f_zone'));
+  const travelAmt = c.travelAmt ?? 0;
+  const mainFactor = c.mainFactor ?? 0;
+  svcRows += `<tr>
+    <td style="text-align:center;font-size:14px">☑</td>
+    <td>Fahrtentschädigung (${ZONES[zone]?.label})</td>
+    <td style="text-align:center">ANF15</td>
+    <td style="text-align:right">1 ×</td>
+    <td class="r">–</td>
+    <td class="r">${fmtCHF(travelAmt)}</td>
+    <td class="r">${fmtCHF(travelAmt * mainFactor)}</td>
+  </tr>`;
+  if (mwstRate > 0) {
+    svcRows += `<tr class="total-row">
+      <td colspan="5" style="text-align:right">Zwischentotal (exkl. MWST)</td>
+      <td class="r">${fmtCHF(c.totalEinsatz||0)}</td>
+      <td class="r">${fmtCHF(c.totalMonat||0)}</td>
+    </tr>
+    <tr>
+      <td colspan="5" style="text-align:right">MWST ${mwstRate}%</td>
+      <td class="r">${fmtCHF((c.totalEinsatz||0)*mwstRate/100)}</td>
+      <td class="r">${fmtCHF((c.totalMonat||0)*mwstRate/100)}</td>
+    </tr>`;
+  }
+  svcRows += `<tr class="total-row">
+    <td colspan="5" style="text-align:right;font-weight:700">TOTAL</td>
+    <td class="r">${fmtCHF(c.totalEinsatzBrutto||0)}</td>
+    <td class="r">${fmtCHF(c.totalMonatBrutto||0)}</td>
+  </tr>`;
+
+  // Rooms
+  let roomRows = '';
+  ROOMS.forEach((room, ri) => {
+    roomRows += `<tr><td colspan="2" class="room-hdr">${room.name}</td></tr>`;
+    room.tasks.forEach((t, ti) => {
+      const checked = document.getElementById('r_' + ri + '_' + ti)?.checked;
+      roomRows += `<tr>
+        <td class="sym">${checked ? '☑' : '☐'}</td>
+        <td>${t}</td>
+      </tr>`;
+    });
+    room.extras.forEach((e, ei) => {
+      const checked = document.getElementById(`r_${ri}_e${ei}`)?.checked;
+      roomRows += `<tr><td class="sym">${checked ? '☑' : '☐'}</td><td class="${checked ? '' : 'note'}">${e}</td></tr>`;
+    });
+  });
+  if (bemerkungen) {
+    roomRows += `<tr><td colspan="2" class="room-hdr" style="background:var(--green)">Sonderwünsche / Bemerkungen</td></tr>
+      <tr><td colspan="2" style="white-space:pre-wrap;padding:8px 10px">${bemerkungen}</td></tr>`;
+  }
+
+  const logo64 = `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`;
+
+  const html = `
+  <div class="contract-hdr">
+    <div>
+      <div class="contract-title">Reinigungsvertrag</div>
+      <div class="contract-subtitle">Rekaj Reinigung &nbsp;·&nbsp; Hanife Rekaj &nbsp;·&nbsp; Alpenstrasse 58, 3627 Heimberg</div>
+    </div>
+    <img src="data:image/jpeg;base64,${logo64}" style="height:60px">
+  </div>
+
+  <!-- PARTEIEN -->
+  <div class="c-section">
+    <div class="c-hdr">Vertragsparteien</div>
+    <div class="parties-grid">
+      <div class="parties-card">
+        <div class="parties-card-hdr">Auftragnehmerin (Reinigungsfirma)</div>
+        <table class="parties-tbl">
+          <tr><td class="lbl">Firma</td><td>Rekaj Reinigung</td></tr>
+          <tr><td class="lbl">Inhaberin</td><td>Hanife Rekaj</td></tr>
+          <tr><td class="lbl">Adresse</td><td>Alpenstrasse 58, 3627 Heimberg</td></tr>
+          <tr><td class="lbl">Telefon</td><td>+41 79 171 11 31</td></tr>
+          <tr><td class="lbl">E-Mail</td><td>info@rekaj-reinigung.ch</td></tr>
+          <tr><td class="lbl">Website</td><td>www.rekaj-reinigung.ch</td></tr>
+        </table>
+      </div>
+      <div class="parties-card">
+        <div class="parties-card-hdr">Auftraggeber / Auftraggeberin</div>
+        <table class="parties-tbl">
+          <tr><td class="lbl">Name / Firma</td><td>${kName}</td></tr>
+          <tr><td class="lbl">Adresse</td><td>${kStr ? kStr + ', ' : ''}${kPlz} ${kOrt}</td></tr>
+          <tr><td class="lbl">Telefon</td><td>${kTel}</td></tr>
+          <tr><td class="lbl">E-Mail</td><td>${kEmail}</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ART. 1 -->
+  <div class="c-section">
+    <div class="c-hdr">1. Gegenstand des Vertrages</div>
+    <p class="c-p">
+      Die Auftragnehmerin verpflichtet sich, die vereinbarten Reinigungsleistungen fachgerecht und sorgfältig zu erbringen.
+      Leistungsort: <strong>${eOrt}</strong>. Der genaue Leistungsumfang je Raum ist in <strong>Anhang 1</strong> detailliert beschrieben
+      und gilt als integrierender Bestandteil dieses Vertrages.
+    </p>
+    <p class="c-p">Zusätzliche Leistungen ausserhalb des vereinbarten Umfangs bedürfen einer gegenseitigen Absprache und werden separat in Rechnung gestellt.</p>
+  </div>
+
+  <!-- ART. 2 -->
+  <div class="c-section">
+    <div class="c-hdr">2. Pflichten der Auftragnehmerin</div>
+    <p class="c-bullet">Die Auftragnehmerin führt die Reinigungsarbeiten fachgerecht und sorgfältig aus.</p>
+    <p class="c-bullet">Sie teilt der Auftraggeberin allfällige Schäden, Vorkommnisse oder notwendige Zusatzarbeiten unverzüglich mit.</p>
+    <p class="c-bullet">Sie informiert über alle für die Reinigung relevanten Umstände und wahrt die Interessen der Auftraggeberin.</p>
+    <p class="c-bullet">Sie schützt vertrauliche Informationen und unternimmt alle zumutbaren Anstrengungen für qualitativ hochwertige Reinigung.</p>
+  </div>
+
+  <!-- ART. 3 -->
+  <div class="c-section">
+    <div class="c-hdr">3. Pflichten der Auftraggeber/in</div>
+    <p class="c-bullet">Stellt alle erforderlichen Unterlagen und Informationen zur Verfügung.</p>
+    <p class="c-bullet">Informiert die Auftragnehmerin unverzüglich über relevante Änderungen.</p>
+    <p class="c-bullet">Gewährt Zugang zu den zu reinigenden Räumen (Schlüssel via Schlüsselsafe oder vereinbarte Abmachung).</p>
+    <p class="c-bullet">Informiert über besondere Anforderungen und teilt Ferienabwesenheiten mindestens 1 Monat vorher mit.</p>
+  </div>
+
+  <!-- ART. 4 -->
+  <div class="c-section">
+    <div class="c-hdr">4. Vergütung und Zahlungsbedingungen</div>
+    <p class="c-p">Vergütungsart: <strong>${vergText}</strong>. Die detaillierte Leistungsübersicht mit Einzelpreisen und berechnetem Total ist in <strong>Anhang 2</strong> aufgeführt.</p>
+    <table style="border-collapse:collapse;margin:6px 0 10px;font-size:13px;width:auto">
+      <tr>
+        <td style="padding:4px 14px 4px 0;white-space:nowrap;color:var(--gray)">Vergütung pro Standardeinsatz:</td>
+        <td style="padding:4px 0;font-weight:700;color:var(--navy)">${fmtCHF(c.totalEinsatzBrutto||0)}</td>
+      </tr>
+      <tr>
+        <td style="padding:4px 14px 4px 0;white-space:nowrap;color:var(--gray)">Monatliche Gesamtvergütung:</td>
+        <td style="padding:4px 0;font-weight:700;color:var(--navy)">${fmtCHF(c.totalMonatBrutto||0)}
+          <span style="font-weight:400;font-size:12px;color:var(--gray)">${mwstRate > 0 ? ' inkl. ' + mwstRate + '% MWST' : ' exkl. MWST'}</span></td>
+      </tr>
+    </table>
+    <p class="c-p">Für Zusatzleistungen ausserhalb des vereinbarten Umfangs gilt ein Stundensatz von <strong>${fmtCHF(parseFloat(zAnsatz)||0)}/h</strong> (ohne MWST).</p>
+    <p class="c-p">Rechnungsstellung: <strong>${rechnText}</strong>. Zahlungsfrist: <strong>${eZfrist} Tage</strong> nach Rechnungsstellung.</p>
+  </div>
+
+  <!-- ART. 5 -->
+  <div class="c-section">
+    <div class="c-hdr">5. Einsatzturnus und -zeiten</div>
+    <p class="c-p">Hauptturnus: <strong>${turnusText}</strong>, am <strong>${eWtag}</strong>.</p>
+    <p class="c-p">Abweichende Turni einzelner Leistungen (z.B. Bettwäsche alle 14 Tage) sind in Anhang 2 geregelt.</p>
+    <p class="c-p">Kann ein Termin wegen Ferien, Krankheit, Unfall oder unvorhergesehenen Ereignissen nicht eingehalten werden, wird in gegenseitiger Absprache ein Ersatztermin vereinbart. Während Weihnachten/Neujahr hat die Auftragnehmerin fix 3 Wochen Ferien.</p>
+  </div>
+
+  <!-- ART. 6 -->
+  <div class="c-section">
+    <div class="c-hdr">6. Laufzeit und Kündigung</div>
+    <p class="c-p">Laufzeit: <strong>${eLaufzeit === 'unbefristet' ? 'Unbefristete Zusammenarbeit' : eLaufzeit === 'einmalig' ? 'Einmalige Dienstleistung' : 'Befristete Zusammenarbeit'}</strong>. Vertragsbeginn: <strong>${eBeginn}</strong>.</p>
+    ${eLaufzeit === 'unbefristet' ? `<p class="c-p">Der Vertrag kann von beiden Seiten mit einer Frist von <strong>${eKfrist} Monat(en)</strong> zum Monatsende schriftlich gekündigt werden.</p>` : ''}
+    <p class="c-p">Das Recht zur ausserordentlichen Kündigung aus wichtigem Grund bleibt unberührt. Die Kündigung bedarf der Schriftform.</p>
+  </div>
+
+  <!-- ART. 7 -->
+  <div class="c-section">
+    <div class="c-hdr">7. Exklusivität</div>
+    <p class="c-p">${eExkl === 'ja'
+      ? '☑ Die Auftragnehmerin erhält das exklusive Recht für die Reinigung der vereinbarten Räumlichkeiten.'
+      : '☑ Die Auftragnehmerin erhält kein exklusives Reinigungsrecht.'}</p>
+  </div>
+
+  <!-- ART. 8 -->
+  <div class="c-section">
+    <div class="c-hdr">8. Haftung</div>
+    <p class="c-p">Die Auftragnehmerin führt die Reinigungsarbeiten sorgfältig aus und haftet für Schäden, die sie oder ihre Mitarbeitenden schuldhaft verursachen. Bereits vorhandene Schäden oder besonders empfindliche Gegenstände sind vor Beginn der Reinigung mitzuteilen. Für normale Abnutzung sowie Schäden ohne Verschulden der Auftragnehmerin wird keine Haftung übernommen.</p>
+  </div>
+
+  <!-- ART. 9 -->
+  <div class="c-section">
+    <div class="c-hdr">9. Datenschutz</div>
+    <p class="c-p">Die Auftragnehmerin verpflichtet sich, die Bestimmungen des Schweizer Datenschutzgesetzes (DSG) einzuhalten. Personenbezogene Daten werden nur im Rahmen der Reinigungstätigkeit erhoben, verarbeitet und genutzt. Die Auftraggeberin erklärt sich mit der Speicherung ihrer Daten im Rahmen des Reinigungsauftrags einverstanden. Allfällig installierte Videokameras sind während der Arbeit der Auftragnehmerin auszuschalten.</p>
+  </div>
+
+  <!-- ART. 10 -->
+  <div class="c-section">
+    <div class="c-hdr">10. Geheimhaltung</div>
+    <p class="c-p">Beide Parteien verpflichten sich, alle im Rahmen der Zusammenarbeit erlangten Informationen vertraulich zu behandeln. Diese Verpflichtung besteht auch nach Beendigung des Vertragsverhältnisses fort.</p>
+  </div>
+
+  <!-- ART. 11 -->
+  <div class="c-section">
+    <div class="c-hdr">11. Ergänzende Bestimmungen</div>
+    <p class="c-p">Die erbrachten Tätigkeiten gelten sozialversicherungsrechtlich als selbständige Erwerbstätigkeit. Die Auftragnehmerin ist selbst besorgt, die AHV/IV/EO-Beiträge mit ihrer Ausgleichskasse abzurechnen. Die Auftraggeberin schuldet keine Sozialversicherungsbeiträge oder Entschädigungsleistungen.</p>
+    <p class="c-p">Ein Schlüssel oder Zugangsmittel wird der Auftragnehmerin jeweils vor Ort zur Verfügung gestellt (via Schlüsselsafe oder vereinbarte Abmachung). Es erfolgt keine fixe Schlüsselabgabe.</p>
+  </div>
+
+  <!-- ART. 12 -->
+  <div class="c-section">
+    <div class="c-hdr">12. Schlussbestimmungen</div>
+    <p class="c-p">Änderungen und Ergänzungen dieses Vertrages bedürfen der Schriftform. Sollten einzelne Bestimmungen unwirksam sein, bleibt der Vertrag im Übrigen wirksam.</p>
+    <p class="c-p">Es gilt schweizerisches Recht (OR). Gerichtsstand ist am Sitz der Auftragnehmerin (Heimberg BE). Dieser Vertrag enthält alle getroffenen Vereinbarungen; Nebenabreden bestehen nicht.</p>
+  </div>
+
+  <!-- UNTERSCHRIFTEN -->
+  <div class="sig-area">
+    <div>
+      <div style="font-size:11px;color:var(--gray);margin-bottom:4px">Ort, Datum</div>
+      <div style="border-bottom:1px solid #555;height:36px"></div>
+      <div style="font-size:11px;color:var(--gray);margin-top:28px;margin-bottom:4px">Unterschrift Auftraggeber/in</div>
+      <div style="border-bottom:1px solid #555;height:36px"></div>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--gray);margin-bottom:4px">Ort, Datum</div>
+      <div style="border-bottom:1px solid #555;height:36px"></div>
+      <div style="font-size:11px;color:var(--gray);margin-top:28px;margin-bottom:4px">Unterschrift Auftragnehmerin (Hanife Rekaj)</div>
+      <div style="border-bottom:1px solid #555;height:36px"></div>
+    </div>
+  </div>
+
+  <!-- ═══ ANHANG 1 ═══ -->
+  <div class="page-break"></div>
+  <div class="c-ahdr">Anhang 1 – Leistungsbeschrieb (Raum für Raum)</div>
+  <p class="c-p" style="font-size:12px;color:var(--gray)">☑ = vereinbart &nbsp;|&nbsp; ☐ = nicht im Standardumfang (auf Anfrage als Zusatzleistung)</p>
+  <table class="check-tbl">
+    ${roomRows}
+  </table>
+
+  <!-- ═══ ANHANG 2 ═══ -->
+  <div class="page-break"></div>
+  <div class="c-ahdr">Anhang 2 – Leistungsübersicht und Vergütung</div>
+  <table class="svc-print-tbl">
+    <thead>
+      <tr>
+        <th style="width:32px">✓</th>
+        <th>Leistung</th>
+        <th style="width:60px;text-align:center">Code</th>
+        <th style="width:120px;text-align:right">Menge / Einheit</th>
+        <th style="width:80px;text-align:right">Ansatz</th>
+        <th style="width:100px;text-align:right">Pro Einsatz</th>
+        <th style="width:100px;text-align:right">Pro Monat</th>
+      </tr>
+    </thead>
+    <tbody>${svcRows}</tbody>
+  </table>
+  <p style="font-size:11px;color:var(--gray);margin-top:8px">
+    Pro Monat berechnet auf Basis der Turni. Hauptturnus: ${turnusText}.
+    ${mwstRate > 0 ? 'Beträge inkl. ' + mwstRate + '% MWST.' : 'Beträge exkl. MWST (Kleinunternehmerregelung).'}
+  </p>
+
+  <!-- ═══ ANHANG 3 ═══ -->
+  <div class="page-break"></div>
+  <div class="c-ahdr">Anhang 3 – Einsatzgebiet und Fahrtentschädigung</div>
+  <p class="c-p">Ausgangspunkt: Wohnort der Auftragnehmerin in <strong>Uetendorf</strong>. Distanzen gemäss direktem Routenweg (Google Maps / SBB).</p>
+  <table class="zone-tbl">
+    <thead><tr>
+      <th style="width:60px">Zone</th>
+      <th style="width:100px">Radius</th>
+      <th>Ortschaften (Auswahl)</th>
+      <th style="width:200px">Fahrtentschädigung</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>1</strong></td>
+        <td>bis 15 km</td>
+        <td>Thun, Gwatt, Heimberg, Steffisburg, Uttigen, Hünibach, Hilterfingen, Fahrni b. Thun, Seftigen, Wattenwil, Blumenstein, Oberhofen, Sigriswil, Heiligenschwendi, Faulensee, Toffen, Gurzelen, Kirchenthurnen, Belp, Merligen</td>
+        <td>CHF 10.00 Pauschale</td>
+      </tr>
+      <tr>
+        <td><strong>2</strong></td>
+        <td>15–30 km</td>
+        <td>Spiez, Münsingen, Wimmis, Rubigen, Wichtrach, Riggisberg, Köniz, Kehrsatz, Gerzensee, Zimmerwald, Frutigen, Erlenbach i.S., Schwarzenburg, Bern (Stadtgebiet), Ostermundigen, Worb, Muri b. Bern</td>
+        <td>CHF 20.00 Pauschale pro Einsatz</td>
+      </tr>
+      <tr>
+        <td><strong>3</strong></td>
+        <td>30–45 km</td>
+        <td>Interlaken, Unterseen, Bönigen, Zweisimmen, Adelboden, Kandersteg, Lyss, Aarberg, Flamatt, Laupen, Burgdorf, Schüpfen</td>
+        <td>CHF 30.00 Pauschale pro Einsatz<br>Nach vorgängiger Absprache</td>
+      </tr>
+      <tr>
+        <td><strong>4</strong></td>
+        <td>45–60 km</td>
+        <td>Biel/Bienne, Grindelwald, Brienz, Meiringen, Fribourg, Saanen/Gstaad, Solothurn, Nidau, Lenk i.S.</td>
+        <td>CHF 40.00 Pauschale pro Einsatz<br>Nur nach ausdrücklicher Vereinbarung</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size:11px;color:var(--gray);margin-top:16px;text-align:right">
+    Stand: August 2026 &nbsp;|&nbsp; Rekaj Reinigung, Hanife Rekaj
+  </p>
+
+  <div class="contract-footer-line">
+    Rekaj Reinigung &nbsp;·&nbsp; Hanife Rekaj &nbsp;·&nbsp; Alpenstrasse 58, 3627 Heimberg &nbsp;·&nbsp; +41 79 171 11 31 &nbsp;·&nbsp; info@rekaj-reinigung.ch &nbsp;·&nbsp; www.rekaj-reinigung.ch
+  </div>
+  `;
+
+  document.getElementById('contract-out').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════════════
+function switchTab(t) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + t).classList.add('active');
+  const idx = t === 'erfassung' ? 0 : 1;
+  document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+  if (t === 'vertrag') generateContract();
+}
+
+function toggleSection(hdr) {
+  const body = hdr.nextElementSibling;
+  const tog = hdr.querySelector('.toggle');
+  if (body.style.display === 'none') {
+    body.style.display = '';
+    tog.textContent = '▾';
+  } else {
+    body.style.display = 'none';
+    tog.textContent = '▸';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// ABSCHLUSS / ELEKTRONISCHE SIGNATUR
+// ═══════════════════════════════════════════════════════════
+function showAbschlussModal() {
+  showAuswahlPanel();
+  const name  = (document.getElementById('k_name')?.value  || '').trim();
+  const email = (document.getElementById('k_email')?.value || '').trim();
+  // Felder in beiden Panels vorausfüllen
+  document.getElementById('sig_name').value       = name;
+  document.getElementById('sig_name').style.borderColor = '';
+  document.getElementById('email_sig_name').value  = name;
+  document.getElementById('email_sig_email').value = email;
+  const now = new Date();
+  const d = now.toLocaleDateString('de-CH', {day:'2-digit', month:'2-digit', year:'numeric'});
+  const t = now.toLocaleTimeString('de-CH', {hour:'2-digit', minute:'2-digit'});
+  document.getElementById('sig_datum').value = d + ', ' + t;
+  document.getElementById('sig_confirm').checked = false;
+  document.getElementById('btn-bestaetigen').disabled = true;
+  document.getElementById('abschluss-modal').classList.add('open');
+}
+
+function closeAbschlussModal() {
+  document.getElementById('abschluss-modal').classList.remove('open');
+}
+
+function closeModalIfBg(e) {
+  if (e.target.id === 'abschluss-modal') closeAbschlussModal();
+}
+
+function showAuswahlPanel() {
+  document.getElementById('modal-panel-auswahl').style.display = '';
+  document.getElementById('modal-panel-sofort').style.display  = 'none';
+  document.getElementById('modal-panel-email').style.display   = 'none';
+  document.getElementById('abschluss-modal').classList.add('open');
+}
+
+function showSofortPanel() {
+  document.getElementById('modal-panel-auswahl').style.display = 'none';
+  document.getElementById('modal-panel-sofort').style.display  = '';
+  document.getElementById('modal-panel-email').style.display   = 'none';
+  document.getElementById('btn-bestaetigen').disabled = true;
+  document.getElementById('sig_confirm').checked = false;
+}
+
+function showEmailPanel() {
+  document.getElementById('modal-panel-auswahl').style.display = 'none';
+  document.getElementById('modal-panel-sofort').style.display  = 'none';
+  document.getElementById('modal-panel-email').style.display   = '';
+}
+
+function updateBestaetigenBtn() {
+  const ok = document.getElementById('sig_confirm').checked &&
+             document.getElementById('sig_name').value.trim().length > 1;
+  document.getElementById('btn-bestaetigen').disabled = !ok;
+}
+
+function abschlussBestaetigen() {
+  const sigName  = document.getElementById('sig_name').value.trim();
+  const sigDatum = document.getElementById('sig_datum').value;
+  if (!sigName) {
+    document.getElementById('sig_name').style.borderColor = 'red';
+    document.getElementById('sig_name').focus();
+    return;
+  }
+  closeAbschlussModal();
+
+  // Speichere Signaturdaten global für E-Mail-Funktionen
+  window.sigData = { name: sigName, datum: sigDatum };
+
+  // ── Sig-Area im Vertrag aktualisieren ──
+  const contractOut = document.getElementById('contract-out');
+  if (contractOut) {
+    const sigArea = contractOut.querySelector('.sig-area');
+    if (sigArea) {
+      sigArea.innerHTML = `
+        <div>
+          <div style="font-size:11px;color:var(--gray);margin-bottom:4px">Ort, Datum</div>
+          <div style="border-bottom:1.5px solid var(--navy);padding-bottom:4px;font-size:13px;font-weight:700;color:var(--navy)">${sigDatum}</div>
+          <div style="font-size:11px;color:var(--gray);margin-top:28px;margin-bottom:4px">Unterschrift Auftraggeber/in</div>
+          <div style="border-bottom:1.5px solid var(--navy);padding-bottom:4px;font-size:13px;font-weight:700;color:var(--navy)">${sigName}
+            <span style="font-size:11px;font-weight:400;color:var(--green);margin-left:6px">✅ elektronisch bestätigt</span></div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--gray);margin-bottom:4px">Ort, Datum</div>
+          <div style="border-bottom:1px solid #555;height:36px"></div>
+          <div style="font-size:11px;color:var(--gray);margin-top:28px;margin-bottom:4px">Unterschrift Auftragnehmerin (Hanife Rekaj)</div>
+          <div style="border-bottom:1px solid #555;height:36px"></div>
+        </div>
+      `;
+    }
+    // Kleiner Vermerk am Ende des Vertrags (vor Footer-Line)
+    const footerLine = contractOut.querySelector('.contract-footer-line');
+    if (footerLine && !contractOut.querySelector('.signed-notice')) {
+      const notice = document.createElement('div');
+      notice.className = 'signed-notice';
+      notice.style.cssText = 'font-size:11px;color:#1a5c27;text-align:center;margin-top:12px;padding:6px;border:1px solid #2D7A3A;border-radius:4px;background:#f0fbf0';
+      notice.textContent = '✅ Elektronisch akzeptiert von ' + sigName + ' am ' + sigDatum;
+      footerLine.parentNode.insertBefore(notice, footerLine);
+    }
+  }
+
+  // ── Button-Zeile ersetzen ──
+  const preSigns = document.getElementById('pre-sign-btns');
+  preSigns.innerHTML = `
+    <span class="signed-chip">✅ Akzeptiert von: <strong style="margin-left:4px">${sigName}</strong> &nbsp;|&nbsp; ${sigDatum}</span>
+    <button class="btn btn-navy" onclick="window.print()">🖨 PDF speichern / Drucken</button>
+    <button class="btn btn-primary" onclick="sendeEmail()">✉️ E-Mail Bestätigung senden</button>
+  `;
+}
+
+function sendeEmail() {
+  if (!window.sigData) return;
+  const sigName  = window.sigData.name;
+  const sigDatum = window.sigData.datum;
+
+  const kEmail = (document.getElementById('k_email')?.value  || '').trim();
+  const kName  = (document.getElementById('k_name')?.value   || sigName).trim();
+  const kStr   = (document.getElementById('k_strasse')?.value || '').trim();
+  const kPlz   = (document.getElementById('k_plz')?.value    || '').trim();
+  const kOrt   = (document.getElementById('k_ort')?.value    || '').trim();
+  const einsatzTxt = (document.getElementById('s_pereinsatz')?.textContent || '—').trim();
+  const monatTxt   = (document.getElementById('s_permonat')?.textContent   || '—').trim();
+
+  const subject = encodeURIComponent('Ihr Reinigungsvertrag – Rekaj Reinigung');
+  const body = encodeURIComponent(
+    'Guten Tag ' + kName + '\n\n' +
+    'Herzlichen Dank für Ihr Vertrauen in Rekaj Reinigung!\n\n' +
+    'Ihr Reinigungsvertrag wurde am ' + sigDatum + ' elektronisch abgeschlossen.\n\n' +
+    '── Vertrags-Zusammenfassung ─────────────────────\n' +
+    'Auftraggeber/in:      ' + kName + '\n' +
+    'Adresse:              ' + kStr + ', ' + kPlz + ' ' + kOrt + '\n' +
+    'Vergütung/Einsatz:    ' + einsatzTxt + '\n' +
+    'Monatliche Vergütung: ' + monatTxt + '\n' +
+    '─────────────────────────────────────────────────\n\n' +
+    'Den vollständigen Vertrag erhalten Sie als PDF-Anhang zu dieser E-Mail\n' +
+    '(bitte das gespeicherte PDF noch an diese E-Mail anhängen, bevor Sie senden).\n\n' +
+    'Freundliche Grüsse\n' +
+    'Hanife Rekaj\n' +
+    'Rekaj Reinigung\n' +
+    'Alpenstrasse 58, 3627 Heimberg\n' +
+    'Tel: +41 79 171 11 31\n' +
+    'info@rekaj-reinigung.ch  |  www.rekaj-reinigung.ch'
+  );
+
+  const to = kEmail ? encodeURIComponent(kEmail) : '';
+  window.location.href = 'mailto:' + to +
+    '?cc=info%40rekaj-reinigung.ch' +
+    '&subject=' + subject +
+    '&body=' + body;
+}
+
+function sendeBestaettigungsanfrage() {
+  const sigName  = document.getElementById('email_sig_name').value.trim();
+  const sigEmail = document.getElementById('email_sig_email').value.trim();
+  if (!sigName) {
+    document.getElementById('email_sig_name').style.borderColor = 'red';
+    document.getElementById('email_sig_name').focus();
+    return;
+  }
+  if (!sigEmail) {
+    document.getElementById('email_sig_email').style.borderColor = 'red';
+    document.getElementById('email_sig_email').focus();
+    return;
+  }
+
+  const now = new Date();
+  const d = now.toLocaleDateString('de-CH', { day:'2-digit', month:'2-digit', year:'numeric' });
+  const t = now.toLocaleTimeString('de-CH', { hour:'2-digit', minute:'2-digit' });
+  const sigDatum = d + ', ' + t;
+
+  const kStr   = (document.getElementById('k_strasse')?.value || '').trim();
+  const kPlz   = (document.getElementById('k_plz')?.value    || '').trim();
+  const kOrt   = (document.getElementById('k_ort')?.value    || '').trim();
+  const einsatzTxt = (document.getElementById('s_pereinsatz')?.textContent || '—').trim();
+  const monatTxt   = (document.getElementById('s_permonat')?.textContent   || '—').trim();
+
+  const subject = encodeURIComponent('Reinigungsvertrag Rekaj Reinigung – Bitte bestätigen');
+  const body = encodeURIComponent(
+    'Guten Tag ' + sigName + '\n\n' +
+    'Vielen Dank für das persönliche Gespräch!\n\n' +
+    'Im Anhang finden Sie Ihren Reinigungsvertrag mit Rekaj Reinigung.\n' +
+    'Bitte lesen Sie den Vertrag durch und bestätigen Sie diesen per Antwort-E-Mail.\n\n' +
+    '── Vertrags-Zusammenfassung ─────────────────────\n' +
+    'Auftraggeber/in:      ' + sigName + '\n' +
+    'Adresse:              ' + kStr + ', ' + kPlz + ' ' + kOrt + '\n' +
+    'Vergütung/Einsatz:    ' + einsatzTxt + '\n' +
+    'Monatliche Vergütung: ' + monatTxt + '\n' +
+    'Erstellt am:          ' + sigDatum + '\n' +
+    '─────────────────────────────────────────────────\n\n' +
+    'ZUR BESTÄTIGUNG: Bitte antworten Sie auf diese E-Mail mit folgendem Text:\n\n' +
+    '  «Ich, ' + sigName + ', habe den Reinigungsvertrag mit Rekaj Reinigung\n' +
+    '   vollständig gelesen und akzeptiere alle Bedingungen verbindlich.»\n\n' +
+    'Sobald Ihre Bestätigung eingegangen ist, erhalten Sie eine Kopie des\n' +
+    'unterzeichneten Vertrags.\n\n' +
+    'Bei Fragen stehe ich Ihnen gerne zur Verfügung.\n\n' +
+    'Freundliche Grüsse\n' +
+    'Hanife Rekaj\n' +
+    'Rekaj Reinigung\n' +
+    'Alpenstrasse 58, 3627 Heimberg\n' +
+    'Tel: +41 79 171 11 31\n' +
+    'info@rekaj-reinigung.ch  |  www.rekaj-reinigung.ch\n\n' +
+    '(PDF-Anhang: Vertrag bitte vor dem Senden noch anhängen)'
+  );
+
+  window.open(
+    'mailto:' + encodeURIComponent(sigEmail) +
+    '?cc=info%40rekaj-reinigung.ch' +
+    '&subject=' + subject +
+    '&body=' + body,
+    '_blank'
+  );
+
+  closeAbschlussModal();
+
+  // ── Vertrag als "ausstehend" markieren ──
+  const contractOut = document.getElementById('contract-out');
+  if (contractOut) {
+    const sigArea = contractOut.querySelector('.sig-area');
+    if (sigArea) {
+      sigArea.innerHTML = `
+        <div>
+          <div style="font-size:11px;color:var(--gray);margin-bottom:4px">Ort, Datum</div>
+          <div style="border-bottom:1.5px solid #e8a000;padding-bottom:4px;font-size:13px;font-weight:700;color:#8a5c00">⏳ Bestätigung ausstehend</div>
+          <div style="font-size:11px;color:var(--gray);margin-top:28px;margin-bottom:4px">Unterschrift Auftraggeber/in</div>
+          <div style="border-bottom:1.5px solid #e8a000;padding-bottom:4px;font-size:13px;font-weight:700;color:#8a5c00">${sigName}
+            <span style="font-size:11px;font-weight:400;color:#8a5c00;margin-left:6px">– E-Mail-Bestätigung angefordert</span></div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--gray);margin-bottom:4px">Ort, Datum</div>
+          <div style="border-bottom:1px solid #555;height:36px"></div>
+          <div style="font-size:11px;color:var(--gray);margin-top:28px;margin-bottom:4px">Unterschrift Auftragnehmerin (Hanife Rekaj)</div>
+          <div style="border-bottom:1px solid #555;height:36px"></div>
+        </div>
+      `;
+    }
+    const footerLine = contractOut.querySelector('.contract-footer-line');
+    if (footerLine && !contractOut.querySelector('.pending-notice')) {
+      const notice = document.createElement('div');
+      notice.className = 'pending-notice';
+      notice.style.cssText = 'font-size:11px;color:#8a5c00;text-align:center;margin-top:12px;padding:6px;border:1px solid #e8a000;border-radius:4px;background:#fffbea';
+      notice.textContent = '⏳ Bestätigung per E-Mail angefordert für ' + sigName + ' – ' + sigDatum;
+      footerLine.parentNode.insertBefore(notice, footerLine);
+    }
+  }
+
+  // ── Button-Zeile anpassen ──
+  const preSigns = document.getElementById('pre-sign-btns');
+  preSigns.innerHTML = `
+    <span class="signed-chip" style="background:#fffbea;border-color:#e8a000;color:#8a5c00">⏳ E-Mail-Bestätigung ausstehend: <strong style="margin-left:4px">${sigName}</strong></span>
+    <button class="btn btn-navy" onclick="window.print()">🖨 PDF speichern / Drucken</button>
+    <button class="btn btn-outline" onclick="showAbschlussModal()">✅ Sofort unterschreiben</button>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════
+// START
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
