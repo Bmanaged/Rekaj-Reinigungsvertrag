@@ -158,6 +158,14 @@ input[readonly], input[disabled] { background: var(--light); color: var(--gray);
 .btn-outline:hover { background: var(--navy); color: #fff; }
 .btn-row { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
 
+/* Objektadressen */
+.obj-toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--navy); cursor: pointer; }
+.obj-toggle input { width: 16px; height: 16px; cursor: pointer; }
+.objekt-item { border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px 12px 10px; margin-bottom: 10px; background: #fafafa; }
+.objekt-item-hdr { font-size: 11px; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 8px; }
+.btn-remove-obj { margin-top: 8px; background: transparent; border: 1px solid #c0392b; color: #c0392b; border-radius: 5px; padding: 4px 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.btn-remove-obj:hover { background: #c0392b; color: #fff; }
+
 /* ── VERTRAG (PRINT PREVIEW) ── */
 .contract-wrap {
   font-family: var(--font);
@@ -283,9 +291,10 @@ input[readonly], input[disabled] { background: var(--light); color: var(--gray);
   <!-- KUNDENDATEN -->
   <div class="section">
     <div class="section-hdr" onclick="toggleSection(this)">
-      <span>1. Kundendaten</span><span class="toggle">▾</span>
+      <span>1. Kundendaten &amp; Rechnungsadresse</span><span class="toggle">▾</span>
     </div>
     <div class="section-body">
+      <p class="room-note" style="padding-left:0;margin:0 0 10px">Diese Adresse gilt als <strong>Rechnungsadresse</strong>. Die Objektadresse (Ort der Reinigung) wird im nächsten Abschnitt erfasst.</p>
       <div class="grid2">
         <div>
           <label class="fl">Name / Firma *</label>
@@ -315,17 +324,31 @@ input[readonly], input[disabled] { background: var(--light); color: var(--gray);
     </div>
   </div>
 
+  <!-- OBJEKTADRESSE(N) -->
+  <div class="section">
+    <div class="section-hdr" onclick="toggleSection(this)">
+      <span>2. Objektadresse(n)</span><span class="toggle">▾</span>
+    </div>
+    <div class="section-body">
+      <label class="obj-toggle">
+        <input type="checkbox" id="o_identisch" checked onchange="toggleObjektIdentisch()">
+        <span>Objektadresse ist identisch mit der Rechnungsadresse</span>
+      </label>
+      <p class="room-note" style="padding-left:26px;margin:4px 0 12px">Häkchen entfernen, wenn die Reinigung an einer oder mehreren anderen Adressen stattfindet (z.&nbsp;B. Wohnung und Büro).</p>
+      <div id="objekt-fields" style="display:none">
+        <div id="objekt-liste"></div>
+        <button type="button" class="btn btn-outline" style="padding:6px 12px;font-size:13px;margin-top:2px" onclick="addObjekt()">＋ Weitere Objektadresse</button>
+      </div>
+    </div>
+  </div>
+
   <!-- EINSATZ -->
   <div class="section">
     <div class="section-hdr" onclick="toggleSection(this)">
-      <span>2. Einsatz &amp; Vertragsdaten</span><span class="toggle">▾</span>
+      <span>3. Einsatz &amp; Vertragsdaten</span><span class="toggle">▾</span>
     </div>
     <div class="section-body">
       <div class="grid3">
-        <div>
-          <label class="fl">Leistungsort (Adresse)</label>
-          <input type="text" id="e_ort" placeholder="wie Kundenadresse" oninput="recalc()">
-        </div>
         <div>
           <label class="fl">Vertragsbeginn</label>
           <input type="date" id="e_beginn" oninput="recalc()">
@@ -382,7 +405,7 @@ input[readonly], input[disabled] { background: var(--light); color: var(--gray);
   <!-- FAHRT / ZONE -->
   <div class="section">
     <div class="section-hdr" onclick="toggleSection(this)">
-      <span>3. Einsatzgebiet &amp; Fahrtentschädigung</span><span class="toggle">▾</span>
+      <span>4. Einsatzgebiet &amp; Fahrtentschädigung</span><span class="toggle">▾</span>
     </div>
     <div class="section-body">
       <div class="grid2">
@@ -405,7 +428,7 @@ input[readonly], input[disabled] { background: var(--light); color: var(--gray);
   <!-- LEISTUNGEN -->
   <div class="section">
     <div class="section-hdr" onclick="toggleSection(this)">
-      <span>4. Leistungsauswahl &amp; Preisberechnung</span><span class="toggle">▾</span>
+      <span>5. Leistungsauswahl &amp; Preisberechnung</span><span class="toggle">▾</span>
     </div>
     <div class="section-body">
       <p style="font-size:12px; color:var(--gray); margin-bottom:12px;">
@@ -480,7 +503,7 @@ input[readonly], input[disabled] { background: var(--light); color: var(--gray);
   <!-- RAUMCHECKLISTE -->
   <div class="section">
     <div class="section-hdr" onclick="toggleSection(this)">
-      <span>5. Raumcheckliste (Anhang 1)</span><span class="toggle">▾</span>
+      <span>6. Raumcheckliste (Anhang 1)</span><span class="toggle">▾</span>
     </div>
     <div class="section-body">
       <p style="font-size:12px;color:var(--gray);margin-bottom:14px;">
@@ -901,6 +924,90 @@ function updateZoneFields() {
 }
 
 // ═══════════════════════════════════════════════════════════
+// OBJEKTADRESSEN
+// ═══════════════════════════════════════════════════════════
+let _objektNr = 0;
+function objektRowHtml() {
+  _objektNr++;
+  const n = _objektNr;
+  return `
+    <div class="objekt-item">
+      <div class="objekt-item-hdr">Objekt ${n}</div>
+      <div class="grid2">
+        <div>
+          <label class="fl">Bezeichnung</label>
+          <input type="text" class="o_bez" placeholder="z. B. Wohnung / Büro" oninput="recalc()">
+        </div>
+        <div>
+          <label class="fl">Strasse / Nr.</label>
+          <input type="text" class="o_str" placeholder="Musterstrasse 1" oninput="recalc()">
+        </div>
+        <div>
+          <label class="fl">PLZ</label>
+          <input type="text" class="o_plz" placeholder="3600" oninput="recalc()">
+        </div>
+        <div>
+          <label class="fl">Ort</label>
+          <input type="text" class="o_ort" placeholder="Thun" oninput="recalc()">
+        </div>
+      </div>
+      <button type="button" class="btn-remove-obj" onclick="removeObjekt(this)">✕ Objekt entfernen</button>
+    </div>`;
+}
+function renumberObjekte() {
+  const items = [...document.querySelectorAll('#objekt-liste .objekt-item')];
+  items.forEach((it, i) => {
+    const hdr = it.querySelector('.objekt-item-hdr');
+    if (hdr) hdr.textContent = 'Objekt ' + (i + 1);
+    const btn = it.querySelector('.btn-remove-obj');
+    if (btn) btn.style.display = items.length > 1 ? 'inline-block' : 'none';
+  });
+}
+function addObjekt() {
+  document.getElementById('objekt-liste').insertAdjacentHTML('beforeend', objektRowHtml());
+  renumberObjekte();
+  recalc();
+}
+function removeObjekt(btn) {
+  btn.closest('.objekt-item')?.remove();
+  const list = document.getElementById('objekt-liste');
+  if (list.querySelectorAll('.objekt-item').length === 0) addObjekt();
+  renumberObjekte();
+  recalc();
+}
+function toggleObjektIdentisch() {
+  const ident = document.getElementById('o_identisch').checked;
+  document.getElementById('objekt-fields').style.display = ident ? 'none' : 'block';
+  if (!ident && document.querySelectorAll('#objekt-liste .objekt-item').length === 0) {
+    addObjekt();
+  }
+  recalc();
+}
+// Liefert Array von Objektadressen: {bezeichnung, strasse, plz, ort, full}
+function collectObjekte() {
+  const v = id => (document.getElementById(id)?.value || '').trim();
+  const mk = (bez, str, plz, ort) => ({
+    bezeichnung: bez, strasse: str, plz, ort,
+    full: [str, [plz, ort].filter(Boolean).join(' ')].filter(Boolean).join(', ')
+  });
+  const billing = mk('', v('k_strasse'), v('k_plz'), v('k_ort'));
+  if (document.getElementById('o_identisch')?.checked) return [billing];
+  const arr = [...document.querySelectorAll('#objekt-liste .objekt-item')].map(it => mk(
+    it.querySelector('.o_bez')?.value.trim() || '',
+    it.querySelector('.o_str')?.value.trim() || '',
+    it.querySelector('.o_plz')?.value.trim() || '',
+    it.querySelector('.o_ort')?.value.trim() || ''
+  )).filter(o => o.strasse || o.plz || o.ort || o.bezeichnung);
+  return arr.length ? arr : [billing];
+}
+// Objektadressen als Klartext (eine Zeile, für E-Mail)
+function objekteEineZeile() {
+  return collectObjekte()
+    .map(o => (o.bezeichnung ? o.bezeichnung + ': ' : '') + (o.full || '—'))
+    .join('   |   ');
+}
+
+// ═══════════════════════════════════════════════════════════
 // CONTRACT GENERATION
 // ═══════════════════════════════════════════════════════════
 function generateContract() {
@@ -913,7 +1020,10 @@ function generateContract() {
   const kOrt     = g('k_ort')    || '___________';
   const kTel     = g('k_tel')    || '___________________________';
   const kEmail   = g('k_email')  || '___________________________';
-  const eOrt     = g('e_ort')    || (kStr + ', ' + kPlz + ' ' + kOrt) || '___________________________';
+  const objekte  = collectObjekte();
+  const objektInline = objekte.length === 1
+    ? `<strong>${(objekte[0].bezeichnung ? objekte[0].bezeichnung + ' – ' : '') + (objekte[0].full || '___________________________')}</strong>`
+    : objekte.map((o, i) => `<br>&nbsp;&nbsp;${i + 1}. <strong>${(o.bezeichnung ? o.bezeichnung + ' – ' : '') + o.full}</strong>`).join('');
   const eBeginn  = fmtDate(g('e_beginn'));
   const eTurnus  = g('e_turnus');
   const eWtag    = g('e_wochentag') || '___________';
@@ -1046,7 +1156,7 @@ function generateContract() {
         <div class="parties-card-hdr">Auftraggeber / Auftraggeberin</div>
         <table class="parties-tbl">
           <tr><td class="lbl">Name / Firma</td><td>${kName}</td></tr>
-          <tr><td class="lbl">Adresse</td><td>${kStr ? kStr + ', ' : ''}${kPlz} ${kOrt}</td></tr>
+          <tr><td class="lbl">Rechnungsadresse</td><td>${kStr ? kStr + ', ' : ''}${kPlz} ${kOrt}</td></tr>
           <tr><td class="lbl">Telefon</td><td>${kTel}</td></tr>
           <tr><td class="lbl">E-Mail</td><td>${kEmail}</td></tr>
         </table>
@@ -1059,7 +1169,7 @@ function generateContract() {
     <div class="c-hdr">1. Gegenstand des Vertrages</div>
     <p class="c-p">
       Die Auftragnehmerin verpflichtet sich, die vereinbarten Reinigungsleistungen fachgerecht und sorgfältig zu erbringen.
-      Leistungsort: <strong>${eOrt}</strong>. Der genaue Leistungsumfang je Raum ist in <strong>Anhang 1</strong> detailliert beschrieben
+      Leistungsort: ${objektInline}. Der genaue Leistungsumfang je Raum ist in <strong>Anhang 1</strong> detailliert beschrieben
       und gilt als integrierender Bestandteil dieses Vertrages.
     </p>
     <p class="c-p">Zusätzliche Leistungen ausserhalb des vereinbarten Umfangs bedürfen einer gegenseitigen Absprache und werden separat in Rechnung gestellt.</p>
@@ -1408,7 +1518,8 @@ function sendeEmail() {
     'Ihr Reinigungsvertrag wurde am ' + sigDatum + ' elektronisch abgeschlossen.\n\n' +
     '── Vertrags-Zusammenfassung ─────────────────────\n' +
     'Auftraggeber/in:      ' + kName + '\n' +
-    'Adresse:              ' + kStr + ', ' + kPlz + ' ' + kOrt + '\n' +
+    'Rechnungsadresse:     ' + kStr + ', ' + kPlz + ' ' + kOrt + '\n' +
+    'Objektadresse(n):     ' + objekteEineZeile() + '\n' +
     'Vergütung/Einsatz:    ' + einsatzTxt + '\n' +
     'Monatliche Vergütung: ' + monatTxt + '\n' +
     '─────────────────────────────────────────────────\n\n' +
@@ -1462,7 +1573,8 @@ function sendeBestaettigungsanfrage() {
     'Bitte lesen Sie den Vertrag durch und bestätigen Sie diesen per Antwort-E-Mail.\n\n' +
     '── Vertrags-Zusammenfassung ─────────────────────\n' +
     'Auftraggeber/in:      ' + sigName + '\n' +
-    'Adresse:              ' + kStr + ', ' + kPlz + ' ' + kOrt + '\n' +
+    'Rechnungsadresse:     ' + kStr + ', ' + kPlz + ' ' + kOrt + '\n' +
+    'Objektadresse(n):     ' + objekteEineZeile() + '\n' +
     'Vergütung/Einsatz:    ' + einsatzTxt + '\n' +
     'Monatliche Vergütung: ' + monatTxt + '\n' +
     'Erstellt am:          ' + sigDatum + '\n' +
