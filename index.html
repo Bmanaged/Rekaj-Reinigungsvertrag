@@ -468,11 +468,30 @@ input[readonly], input[disabled] { background: var(--light); color: var(--gray);
         </div>
         <div>
           <label class="fl">Vergütungsart</label>
-          <select id="z_vergtyp" onchange="recalc()">
+          <select id="z_vergtyp" onchange="updateVergtypFields(); recalc();">
             <option value="pauschale">Pauschalbetrag</option>
             <option value="stunden">Stundenhonorar</option>
             <option value="monat">Monatliche Vergütung</option>
           </select>
+        </div>
+      </div>
+
+      <!-- Pauschale: inkludierte Stunden -->
+      <div id="pausch-limit-box" style="margin-top:12px; padding:12px; background:var(--light); border-radius:5px; display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div>
+          <label class="fl">Inkludierte Stunden (max.)</label>
+          <input type="number" id="z_pausch_max_h" value="" min="0" step="0.5" placeholder="z. B. 4" oninput="recalc()">
+        </div>
+        <div>
+          <label class="fl">Zeiteinheit der Pauschale</label>
+          <select id="z_pausch_einheit" onchange="recalc()">
+            <option value="woche">pro Woche</option>
+            <option value="einsatz">pro Einsatz</option>
+            <option value="monat">pro Monat</option>
+          </select>
+        </div>
+        <div class="span2" style="font-size:12px;color:var(--gray)">
+          Stunden, die über dieses Maximum hinausgehen, werden zum Ansatz für Zusatzstunden (CHF/h oben) separat verrechnet.
         </div>
       </div>
 
@@ -510,6 +529,11 @@ input[readonly], input[disabled] { background: var(--light); color: var(--gray);
         Aktiviere die gewünschten Aufgaben pro Raum. Diese Liste erscheint als Anhang 1 im Vertrag.
       </p>
       <div class="room-grid" id="room-grid"><!-- filled by JS --></div>
+
+      <div class="btn-row" style="margin:4px 0 16px;">
+        <button type="button" class="btn btn-outline" onclick="addCustomRoom()">+ Zusätzliches Zimmer hinzufügen</button>
+      </div>
+      <div class="room-grid" id="custom-room-grid"><!-- filled by JS --></div>
 
       <!-- Bemerkungen -->
       <div style="margin-top:16px;">
@@ -736,15 +760,25 @@ const ROOMS = [
   ], extras:['Abnahmereinigung nach Stundenansatz CHF 55/h']},
 ];
 
+let customRooms = [];
+let _customRoomSeq = 0;
+
 // ═══════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════
 function init() {
   buildSvcTable();
   buildRoomGrid();
+  updateVergtypFields();
   // default date = today
   document.getElementById('e_beginn').value = new Date().toISOString().slice(0,10);
   recalc();
+}
+
+function updateVergtypFields() {
+  const box = document.getElementById('pausch-limit-box');
+  const isPauschale = document.getElementById('z_vergtyp').value === 'pauschale';
+  box.style.display = isPauschale ? 'grid' : 'none';
 }
 
 function buildSvcTable() {
@@ -809,6 +843,104 @@ function buildRoomGrid() {
     `;
     grid.appendChild(card);
   });
+}
+
+// ── Zusätzliche (frei erfassbare) Zimmer ──
+function customRoomTasksHtml(r) {
+  if (r.templateIdx === '' || r.templateIdx == null) {
+    return '<p class="room-note" style="padding-left:0;margin:0">Keine Vorlage gewählt – nur eigene Aufgaben unten.</p>';
+  }
+  const room = ROOMS[r.templateIdx];
+  if (!room) return '';
+  let html = room.tasks.map((t, ti) => `
+    <div class="room-task">
+      <input type="checkbox" id="cr_${r.id}_t${ti}" ${r.checkedTasks?.[ti] === false ? '' : 'checked'}>
+      <label for="cr_${r.id}_t${ti}">${t}</label>
+    </div>`).join('');
+  html += room.extras.map((e, ei) => `
+    <div class="room-task" style="opacity:0.75">
+      <input type="checkbox" id="cr_${r.id}_e${ei}" ${r.checkedExtras?.[ei] ? 'checked' : ''}>
+      <label for="cr_${r.id}_e${ei}" style="font-style:italic;color:var(--gray)">${e}</label>
+    </div>`).join('');
+  return html;
+}
+
+function customRoomCardHtml(r) {
+  const templateOpts = ['<option value="">— Eigenes Zimmer (keine Vorlage) —</option>']
+    .concat(ROOMS.map((room, idx) => `<option value="${idx}" ${String(r.templateIdx) === String(idx) ? 'selected' : ''}>${room.name}</option>`))
+    .join('');
+  return `
+    <div class="room-card" id="cr_card_${r.id}">
+      <div class="room-card-hdr" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <input type="text" id="cr_name_${r.id}" placeholder="z. B. Schlafzimmer 2 (Kind)" value="${r.name || ''}"
+               style="flex:1;font-weight:700;border:1px solid var(--border);border-radius:4px;padding:4px 6px;font-size:13px;" oninput="recalc()">
+        <button type="button" class="btn-remove-obj" style="margin:0;padding:3px 9px;" onclick="removeCustomRoom(${r.id})">✕</button>
+      </div>
+      <div class="room-card-body">
+        <div style="margin-bottom:8px">
+          <label class="fl" style="margin-bottom:2px">Aufgaben-Vorlage</label>
+          <select onchange="setCustomRoomTemplate(${r.id}, this.value)" style="font-size:12px;padding:4px 6px;width:100%;">${templateOpts}</select>
+        </div>
+        <div id="cr_tasks_${r.id}">${customRoomTasksHtml(r)}</div>
+        <div style="margin-top:8px">
+          <label class="fl" style="margin-bottom:2px">Zusätzliche eigene Aufgaben (eine pro Zeile)</label>
+          <textarea id="cr_extra_${r.id}" rows="2" placeholder="z. B. Fenster innen putzen" oninput="recalc()" style="width:100%;font-size:12px;">${r.extraText || ''}</textarea>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderCustomRooms() {
+  const grid = document.getElementById('custom-room-grid');
+  grid.innerHTML = customRooms.map(customRoomCardHtml).join('');
+}
+
+function syncCustomRoomsFromDOM() {
+  customRooms.forEach(r => {
+    const nameEl = document.getElementById('cr_name_' + r.id);
+    const extraEl = document.getElementById('cr_extra_' + r.id);
+    if (nameEl) r.name = nameEl.value;
+    if (extraEl) r.extraText = extraEl.value;
+    if (r.templateIdx !== '' && r.templateIdx != null) {
+      const room = ROOMS[r.templateIdx];
+      if (room) {
+        r.checkedTasks = {};
+        room.tasks.forEach((t, ti) => {
+          r.checkedTasks[ti] = document.getElementById(`cr_${r.id}_t${ti}`)?.checked ?? true;
+        });
+        r.checkedExtras = {};
+        room.extras.forEach((e, ei) => {
+          r.checkedExtras[ei] = document.getElementById(`cr_${r.id}_e${ei}`)?.checked ?? false;
+        });
+      }
+    }
+  });
+}
+
+function setCustomRoomTemplate(id, val) {
+  const r = customRooms.find(x => x.id === id);
+  if (!r) return;
+  r.templateIdx = val;
+  r.checkedTasks = {};
+  r.checkedExtras = {};
+  const el = document.getElementById('cr_tasks_' + id);
+  if (el) el.innerHTML = customRoomTasksHtml(r);
+  recalc();
+}
+
+function addCustomRoom() {
+  syncCustomRoomsFromDOM();
+  _customRoomSeq++;
+  customRooms.push({ id: _customRoomSeq, templateIdx: '', name: '', extraText: '', checkedTasks: {}, checkedExtras: {} });
+  renderCustomRooms();
+  recalc();
+}
+
+function removeCustomRoom(id) {
+  syncCustomRoomsFromDOM();
+  customRooms = customRooms.filter(r => r.id !== id);
+  renderCustomRooms();
+  recalc();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -886,6 +1018,12 @@ function recalc() {
     <span>${fmtCHF(travelAmt * mainFactor)}/Mt.</span>
   </div>`;
   if (mwst > 0) det += `<div class="summary-row"><span>MWST ${mwst}%</span><span>+${fmtCHF(totalMonat * mwst/100)}</span></div>`;
+  const zVergtypVal = document.getElementById('z_vergtyp')?.value || 'pauschale';
+  const pauschMaxH = parseFloat(document.getElementById('z_pausch_max_h')?.value) || 0;
+  const pauschEinheitLabel = { woche:'Woche', einsatz:'Einsatz', monat:'Monat' }[document.getElementById('z_pausch_einheit')?.value] || 'Woche';
+  if (zVergtypVal === 'pauschale' && pauschMaxH > 0) {
+    det += `<div class="summary-row"><span>Inkl. Stunden (Pauschale)</span><span>max. ${pauschMaxH} Std. / ${pauschEinheitLabel}</span></div>`;
+  }
   det += `<div class="summary-row total"><span>TOTAL PRO MONAT</span><span>${fmtCHF(totalMonatBrutto)}</span></div>`;
   document.getElementById('s_detail').innerHTML = det;
 
@@ -1035,6 +1173,8 @@ function generateContract() {
   const zAnsatz  = g('z_ansatz') || '45';
   const zVergtyp = g('z_vergtyp');
   const mwstRate = parseFloat(g('z_mwst')) || 0;
+  const zPauschMaxH = parseFloat(g('z_pausch_max_h')) || 0;
+  const zPauschEinheit = { woche:'Woche', einsatz:'Einsatz', monat:'Monat' }[g('z_pausch_einheit')] || 'Woche';
   const bemerkungen = g('r_bemerkungen');
 
   const turnusText = {
@@ -1121,6 +1261,28 @@ function generateContract() {
       roomRows += `<tr><td class="sym">${checked ? '☑' : '☐'}</td><td class="${checked ? '' : 'note'}">${e}</td></tr>`;
     });
   });
+  customRooms.forEach(r => {
+    const roomName = (document.getElementById('cr_name_' + r.id)?.value || '').trim() || 'Zusätzliches Zimmer';
+    roomRows += `<tr><td colspan="2" class="room-hdr">${roomName}</td></tr>`;
+    if (r.templateIdx !== '' && r.templateIdx != null) {
+      const room = ROOMS[r.templateIdx];
+      if (room) {
+        room.tasks.forEach((t, ti) => {
+          const checked = document.getElementById(`cr_${r.id}_t${ti}`)?.checked;
+          roomRows += `<tr><td class="sym">${checked ? '☑' : '☐'}</td><td>${t}</td></tr>`;
+        });
+        room.extras.forEach((e, ei) => {
+          const checked = document.getElementById(`cr_${r.id}_e${ei}`)?.checked;
+          roomRows += `<tr><td class="sym">${checked ? '☑' : '☐'}</td><td class="${checked ? '' : 'note'}">${e}</td></tr>`;
+        });
+      }
+    }
+    const extraLines = (document.getElementById('cr_extra_' + r.id)?.value || '')
+      .split('\n').map(l => l.trim()).filter(Boolean);
+    extraLines.forEach(line => {
+      roomRows += `<tr><td class="sym">☑</td><td>${line}</td></tr>`;
+    });
+  });
   if (bemerkungen) {
     roomRows += `<tr><td colspan="2" class="room-hdr" style="background:var(--green)">Sonderwünsche / Bemerkungen</td></tr>
       <tr><td colspan="2" style="white-space:pre-wrap;padding:8px 10px">${bemerkungen}</td></tr>`;
@@ -1197,6 +1359,7 @@ function generateContract() {
   <div class="c-section">
     <div class="c-hdr">4. Vergütung und Zahlungsbedingungen</div>
     <p class="c-p">Vergütungsart: <strong>${vergText}</strong>. Die detaillierte Leistungsübersicht mit Einzelpreisen und berechnetem Total ist in <strong>Anhang 2</strong> aufgeführt.</p>
+    ${zVergtyp === 'pauschale' && zPauschMaxH > 0 ? `<p class="c-p">Die vereinbarte Pauschale beinhaltet maximal <strong>${zPauschMaxH} Stunden pro ${zPauschEinheit}</strong>. Reinigungsleistungen, die über dieses Stundenkontingent hinausgehen, werden zusätzlich zum Ansatz für Zusatzstunden von <strong>${fmtCHF(parseFloat(zAnsatz)||0)}/h</strong> verrechnet.</p>` : ''}
     <table style="border-collapse:collapse;margin:6px 0 10px;font-size:13px;width:auto">
       <tr>
         <td style="padding:4px 14px 4px 0;white-space:nowrap;color:var(--gray)">Vergütung pro Standardeinsatz:</td>
