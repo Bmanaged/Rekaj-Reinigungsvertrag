@@ -447,10 +447,10 @@ input[readonly], input[disabled] { background: var(--light); color: var(--gray);
         <div>
           <label class="fl">Zone</label>
           <select id="f_zone" onchange="updateZoneFields(); recalc();">
-            <option value="1">Zone 1 – bis 15 km (CHF 10.00 Pauschale)</option>
-            <option value="2">Zone 2 – 15–30 km (CHF 20.00 Pauschale)</option>
-            <option value="3">Zone 3 – 30–45 km (CHF 30.00 Pauschale)</option>
-            <option value="4">Zone 4 – 45–60 km (CHF 40.00 Pauschale)</option>
+            <option value="1">Zone 1 – bis 10 km (CHF 10.00 Pauschale)</option>
+            <option value="2">Zone 2 – 10–20 km (CHF 20.00 Pauschale)</option>
+            <option value="3">Zone 3 – 20–30 km (CHF 30.00 Pauschale)</option>
+            <option value="4">Zone 4 – 30–40 km (CHF 40.00 Pauschale)</option>
           </select>
         </div>
         <div style="display:flex;align-items:center;padding-top:22px;">
@@ -791,10 +791,10 @@ const SERVICES = [
 ];
 
 const ZONES = {
-  1: { label:'Zone 1 – bis 15 km', flat:10 },
-  2: { label:'Zone 2 – 15–30 km', flat:20 },
-  3: { label:'Zone 3 – 30–45 km', flat:30 },
-  4: { label:'Zone 4 – 45–60 km', flat:40 },
+  1: { label:'Zone 1 – bis 10 km', flat:10 },
+  2: { label:'Zone 2 – 10–20 km', flat:20 },
+  3: { label:'Zone 3 – 20–30 km', flat:30 },
+  4: { label:'Zone 4 – 30–40 km', flat:40 },
 };
 
 const TURNUS_OPTS = [
@@ -1866,27 +1866,30 @@ function generateContract() {
     <tbody>
       <tr>
         <td><strong>1</strong></td>
-        <td>bis 15 km</td>
-        <td>Thun, Gwatt, Heimberg, Steffisburg, Uttigen, Hünibach, Hilterfingen, Fahrni b. Thun, Seftigen, Wattenwil, Blumenstein, Oberhofen, Sigriswil, Heiligenschwendi, Faulensee, Toffen, Gurzelen, Kirchenthurnen, Belp, Merligen</td>
+        <td>bis 10 km</td>
+        <td>Thun, Uetendorf, Heimberg, Steffisburg, Uttigen, Thierachern, Gwatt, Hünibach, Amsoldingen, Fahrni b. Thun, Seftigen, Gurzelen, Kiesen</td>
         <td>CHF 10.00 Pauschale</td>
       </tr>
       <tr>
         <td><strong>2</strong></td>
-        <td>15–30 km</td>
-        <td>Spiez, Münsingen, Wimmis, Rubigen, Wichtrach, Riggisberg, Köniz, Kehrsatz, Gerzensee, Zimmerwald, Frutigen, Erlenbach i.S., Schwarzenburg, Bern (Stadtgebiet), Ostermundigen, Worb, Muri b. Bern</td>
+        <td>10–20 km</td>
+        <td>Hilterfingen, Oberhofen, Heiligenschwendi, Sigriswil, Spiez, Wimmis, Faulensee, Merligen, Wattenwil, Blumenstein, Kirchenthurnen, Toffen, Belp, Münsingen, Wichtrach, Gerzensee</td>
         <td>CHF 20.00 Pauschale pro Einsatz</td>
       </tr>
       <tr>
         <td><strong>3</strong></td>
-        <td>30–45 km</td>
-        <td>Interlaken, Unterseen, Bönigen, Zweisimmen, Adelboden, Kandersteg, Lyss, Aarberg, Flamatt, Laupen, Burgdorf, Schüpfen</td>
+        <td>20–30 km</td>
+        <td>Riggisberg, Köniz, Kehrsatz, Rubigen, Zimmerwald, Worb, Muri b. Bern, Ostermundigen, Bern (Stadtgebiet), Schwarzenburg, Erlenbach i.S., Frutigen, Reichenbach i.K.</td>
         <td>CHF 30.00 Pauschale pro Einsatz<br>Nach vorgängiger Absprache</td>
       </tr>
       <tr>
         <td><strong>4</strong></td>
-        <td>45–60 km</td>
-        <td>Biel/Bienne, Grindelwald, Brienz, Meiringen, Fribourg, Saanen/Gstaad, Solothurn, Nidau, Lenk i.S.</td>
+        <td>30–40 km</td>
+        <td>Interlaken, Unterseen, Bönigen, Zweisimmen, Adelboden, Kandersteg, Burgdorf, Laupen, Flamatt, Schüpfen, Brienz</td>
         <td>CHF 40.00 Pauschale pro Einsatz<br>Nur nach ausdrücklicher Vereinbarung</td>
+      </tr>
+      <tr>
+        <td colspan="4" style="font-size:11px;color:var(--gray);padding-top:6px">Weiter entfernte Ortschaften (über 40 km, z. B. Biel/Bienne, Solothurn, Fribourg, Saanen/Gstaad, Lenk i.S., Grindelwald, Meiringen, Lyss, Aarberg) nur nach ausdrücklicher Vereinbarung.</td>
       </tr>
     </tbody>
   </table>
