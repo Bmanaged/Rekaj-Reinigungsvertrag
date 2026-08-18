@@ -143,6 +143,42 @@ input[readonly], input[disabled] { background: var(--light); color: var(--gray);
 .room-task input { margin-top: 2px; flex-shrink: 0; }
 .room-note { font-size: 11px; color: var(--gray); font-style: italic; padding: 4px 0 0 24px; }
 
+/* Raumauswahl */
+.room-card-hdr { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.room-card-hdr input[type=checkbox] { width: 16px; height: 16px; flex-shrink: 0; cursor: pointer; }
+.room-card.inactive { opacity: 0.5; }
+.room-card.inactive .room-card-body { display: none; }
+.room-toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+.room-count { font-size: 12px; color: var(--gray); margin-left: auto; }
+.btn-mini { font-size: 12px; padding: 4px 10px; border: 1px solid var(--border); border-radius: 5px;
+  background: #fff; color: var(--navy); cursor: pointer; }
+.btn-mini:hover { background: var(--light); }
+.rtask-custom { flex: 1; border: 1px solid var(--border); border-radius: 4px; padding: 3px 6px; font-size: 13px; }
+.task-add-row { padding: 6px 0 0; }
+.room-card-custom { border-color: var(--navy); }
+.room-card-custom .room-card-hdr { background: var(--navy); color: #fff; }
+.rname { flex: 1; border: none; background: transparent; color: #fff; font-weight: 700; font-size: 13px; }
+.rname::placeholder { color: rgba(255,255,255,.7); }
+
+/* Pauschal-Panel */
+#pauschal-panel { margin-top: 12px; padding: 14px; border: 1px solid var(--navy);
+  border-radius: 6px; background: #f5f8fc; }
+#pauschal-panel h4 { margin: 0 0 4px; font-size: 14px; color: var(--navy); }
+#pauschal-panel .ph-note { font-size: 12px; color: var(--gray); margin-bottom: 12px; }
+.pauschal-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
+@media (max-width: 640px) { .pauschal-grid { grid-template-columns: 1fr 1fr; } }
+.pauschal-hint { margin-top: 12px; padding: 8px 10px; background: #fff; border-left: 3px solid var(--navy);
+  border-radius: 4px; font-size: 12.5px; color: var(--navy); }
+
+/* Abgabereinigung */
+.ab-area-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px 12px; }
+@media (max-width: 640px) { .ab-area-grid { grid-template-columns: 1fr 1fr; } }
+.ab-area { display: flex; align-items: center; gap: 8px; }
+.ab-area label { flex: 1; font-size: 13px; }
+.ab-area input[type=number] { width: 58px; text-align: right; }
+.ab-area input[type=text] { flex: 1; border: 1px solid var(--border); border-radius: 4px; padding: 3px 6px; font-size: 13px; }
+#ab-body.disabled { opacity: 0.45; pointer-events: none; }
+
 /* ── BUTTONS ── */
 .btn {
   display: inline-flex; align-items: center; gap: 8px;
@@ -432,8 +468,9 @@ input[readonly], input[disabled] { background: var(--light); color: var(--gray);
     </div>
     <div class="section-body">
       <p style="font-size:12px; color:var(--gray); margin-bottom:12px;">
-        Aktiviere die gewünschten Leistungen, passe Menge / Stunden an und wähle ggf. einen abweichenden Turnus pro Leistung.
-        Die Beträge werden automatisch berechnet.
+        Aktiviere die gewünschten Leistungen, passe Menge / Stunden, Ansatz / Preis und ggf. den Turnus pro Leistung an.
+        Mit „Preis pro“ legst du fest, ob der Betrag <strong>pro Einsatz/Einheit</strong> gilt (wird per Turnus auf den Monat hochgerechnet)
+        oder ein <strong>Pauschalpreis pro Monat</strong> ist. Die Beträge werden automatisch berechnet.
       </p>
       <table class="svc-table">
         <thead>
@@ -442,8 +479,9 @@ input[readonly], input[disabled] { background: var(--light); color: var(--gray);
             <th>Leistung</th>
             <th>Code</th>
             <th style="width:145px">Eigener Turnus</th>
-            <th style="width:90px">Menge / Std</th>
-            <th style="width:90px">Ansatz CHF</th>
+            <th style="width:80px">Menge / Std</th>
+            <th style="width:90px">Ansatz / Preis</th>
+            <th style="width:120px">Preis pro</th>
             <th style="width:100px">Pro Einsatz</th>
             <th style="width:100px">Pro Monat</th>
           </tr>
@@ -468,7 +506,7 @@ input[readonly], input[disabled] { background: var(--light); color: var(--gray);
         </div>
         <div>
           <label class="fl">Vergütungsart</label>
-          <select id="z_vergtyp" onchange="updateVergtypFields(); recalc();">
+          <select id="z_vergtyp" onchange="onVergtyp()">
             <option value="pauschale">Pauschalbetrag</option>
             <option value="stunden">Stundenhonorar</option>
             <option value="monat">Monatliche Vergütung</option>
@@ -476,23 +514,40 @@ input[readonly], input[disabled] { background: var(--light); color: var(--gray);
         </div>
       </div>
 
-      <!-- Pauschale: inkludierte Stunden -->
-      <div id="pausch-limit-box" style="margin-top:12px; padding:12px; background:var(--light); border-radius:5px; display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-        <div>
-          <label class="fl">Inkludierte Stunden (max.)</label>
-          <input type="number" id="z_pausch_max_h" value="" min="0" step="0.5" placeholder="z. B. 4" oninput="recalc()">
+      <!-- PAUSCHAL-PANEL -->
+      <div id="pauschal-panel" style="display:none;">
+        <h4>Pauschalangebot</h4>
+        <p class="ph-note">
+          Fixen Pauschalpreis erfassen und festhalten, wie viele Stunden maximal pro Einheit/Turnus
+          darin eingerechnet sind. Der Pauschalpreis ersetzt in der Zusammenfassung und im Vertrag
+          das aus den Einzelpositionen berechnete Total.
+        </p>
+        <div class="pauschal-grid">
+          <div>
+            <label class="fl">Pauschalpreis CHF</label>
+            <input type="number" id="p_betrag" value="0" min="0" step="10" oninput="recalc()">
+          </div>
+          <div>
+            <label class="fl">Pauschale gilt pro</label>
+            <select id="p_basis" onchange="recalc()">
+              <option value="einsatz">Einsatz</option>
+              <option value="monat">Monat</option>
+            </select>
+          </div>
+          <div>
+            <label class="fl">Max. Stunden inkl.</label>
+            <input type="number" id="p_maxstd" value="0" min="0" step="0.5" oninput="recalc()">
+          </div>
+          <div>
+            <label class="fl">Stunden gelten pro</label>
+            <select id="p_maxbasis" onchange="recalc()">
+              <option value="einsatz">Einsatz / Turnus</option>
+              <option value="monat">Monat</option>
+              <option value="woche">Woche</option>
+            </select>
+          </div>
         </div>
-        <div>
-          <label class="fl">Zeiteinheit der Pauschale</label>
-          <select id="z_pausch_einheit" onchange="recalc()">
-            <option value="woche">pro Woche</option>
-            <option value="einsatz">pro Einsatz</option>
-            <option value="monat">pro Monat</option>
-          </select>
-        </div>
-        <div class="span2" style="font-size:12px;color:var(--gray)">
-          Stunden, die über dieses Maximum hinausgehen, werden zum Ansatz für Zusatzstunden (CHF/h oben) separat verrechnet.
-        </div>
+        <div class="pauschal-hint" id="p_hint">–</div>
       </div>
 
       <!-- SUMMARY BOX -->
@@ -526,19 +581,90 @@ input[readonly], input[disabled] { background: var(--light); color: var(--gray);
     </div>
     <div class="section-body">
       <p style="font-size:12px;color:var(--gray);margin-bottom:14px;">
-        Aktiviere die gewünschten Aufgaben pro Raum. Diese Liste erscheint als Anhang 1 im Vertrag.
+        Wähle die Räume aus, die für diesen Auftrag gelten (Häkchen im Raumtitel), und aktiviere die
+        gewünschten Aufgaben pro Raum. Nur ausgewählte Räume erscheinen als Anhang 1 im Vertrag.
       </p>
-      <div class="room-grid" id="room-grid"><!-- filled by JS --></div>
-
-      <div class="btn-row" style="margin:4px 0 16px;">
-        <button type="button" class="btn btn-outline" onclick="addCustomRoom()">+ Zusätzliches Zimmer hinzufügen</button>
+      <div class="room-toolbar">
+        <button type="button" class="btn-mini" onclick="setAllRooms(true)">☑ Alle Räume auswählen</button>
+        <button type="button" class="btn-mini" onclick="setAllRooms(false)">☐ Alle abwählen</button>
+        <button type="button" class="btn-mini" onclick="addCustomRoom()">+ Eigenen Raum hinzufügen</button>
+        <span class="room-count" id="room-count">0 Räume ausgewählt</span>
       </div>
-      <div class="room-grid" id="custom-room-grid"><!-- filled by JS --></div>
+      <div class="room-grid" id="room-grid"><!-- filled by JS --></div>
 
       <!-- Bemerkungen -->
       <div style="margin-top:16px;">
         <label class="fl">Sonderwünsche / ergänzende Bemerkungen</label>
         <textarea id="r_bemerkungen" rows="4" placeholder="z. B. Einmal pro Monat Backofenreinigung nach Aufwand; Fensterputzen (innen) alle 3 Monate; usw." oninput="recalc()" style="width:100%;"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABGABEREINIGUNG -->
+  <div class="section">
+    <div class="section-hdr" onclick="toggleSection(this)">
+      <span>7. Abgabereinigung (Wohnungsabgabe / Umzug)</span><span class="toggle">▾</span>
+    </div>
+    <div class="section-body">
+      <label class="room-card-hdr" style="border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:12px;">
+        <input type="checkbox" id="ab_aktiv" onchange="onAbAktiv()">
+        <span>Abgabereinigung in dieses Angebot aufnehmen</span>
+      </label>
+
+      <div id="ab-body">
+        <div class="grid2">
+          <div>
+            <label class="fl">Abgabegarantie</label>
+            <select id="ab_garantie" onchange="recalc()">
+              <option value="mit">Mit Abgabegarantie</option>
+              <option value="ohne">Ohne Abgabegarantie</option>
+            </select>
+          </div>
+          <div>
+            <label class="fl">Objekt</label>
+            <select id="ab_objekt" onchange="recalc()">
+              <option value="Wohnung">Wohnung</option>
+              <option value="Haus">Haus</option>
+              <option value="Büro / Gewerbe">Büro / Gewerbe</option>
+            </select>
+          </div>
+          <div>
+            <label class="fl">Anzahl Zimmer</label>
+            <input type="number" id="ab_zimmer" value="0" min="0" step="0.5" oninput="recalc()">
+          </div>
+          <div>
+            <label class="fl">Fläche m²</label>
+            <input type="number" id="ab_m2" value="0" min="0" step="1" oninput="recalc()">
+          </div>
+        </div>
+
+        <p class="fl" style="margin-top:14px;">Räume &amp; Aussenflächen (Anzahl eintragen)</p>
+        <div class="ab-area-grid" id="ab-areas"><!-- filled by JS --></div>
+        <div style="margin-top:10px;">
+          <button type="button" class="btn-mini" onclick="addAbArea()">+ Eigene Fläche hinzufügen</button>
+        </div>
+
+        <div style="margin-top:16px;">
+          <label class="fl">Bemerkungen (Zustand, Verschmutzung, Besonderes)</label>
+          <textarea id="ab_bemerkungen" rows="3" placeholder="z. B. Küche stark verschmutzt (Fett); Backofen mit Einbrand; Storenreinigung nötig; Wände mit Flecken; usw." oninput="recalc()" style="width:100%;"></textarea>
+        </div>
+
+        <div class="pauschal-hint" style="margin-top:16px;background:#f5f8fc;">
+          <div class="pauschal-grid" style="grid-template-columns:1fr 1fr;">
+            <div>
+              <label class="fl">Pauschalpreis Abgabereinigung CHF</label>
+              <input type="number" id="ab_pauschale" value="0" min="0" step="10" oninput="recalc()">
+            </div>
+            <div>
+              <label class="fl">Mehrwertsteuer</label>
+              <select id="ab_mwst" onchange="recalc()">
+                <option value="0">Keine (Kleinunternehmer)</option>
+                <option value="8.1">8.1% MWST</option>
+              </select>
+            </div>
+          </div>
+          <div id="ab_summary" style="margin-top:10px;font-weight:700;color:var(--navy);">Pauschalpreis: CHF 0.00</div>
+        </div>
       </div>
     </div>
   </div>
@@ -681,8 +807,9 @@ const TURNUS_OPTS = [
   { v:'once',   l:'Einmalig / Bedarf' },
 ];
 
+// Monat = 4 Wochen: wöchentlich 4×, alle 14 Tage 2×, monatlich 1×, täglich 20× (Mo–Fr)
 const MONTHLY = {
-  daily:22, weekly:52/12, '14days':26/12, monthly:1, once:0, main:null
+  daily:20, weekly:4, '14days':2, monthly:1, once:0, main:null
 };
 
 const ROOMS = [
@@ -760,25 +887,18 @@ const ROOMS = [
   ], extras:['Abnahmereinigung nach Stundenansatz CHF 55/h']},
 ];
 
-let customRooms = [];
-let _customRoomSeq = 0;
-
 // ═══════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════
 function init() {
   buildSvcTable();
   buildRoomGrid();
-  updateVergtypFields();
+  buildAbAreas();
   // default date = today
   document.getElementById('e_beginn').value = new Date().toISOString().slice(0,10);
+  onVergtyp();
+  onAbAktiv();
   recalc();
-}
-
-function updateVergtypFields() {
-  const box = document.getElementById('pausch-limit-box');
-  const isPauschale = document.getElementById('z_vergtyp').value === 'pauschale';
-  box.style.display = isPauschale ? 'grid' : 'none';
 }
 
 function buildSvcTable() {
@@ -787,7 +907,7 @@ function buildSvcTable() {
   SERVICES.forEach((s,i) => {
     if (s.cat) {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td colspan="8" class="cat-row">\u25B8 ${s.cat}</td>`;
+      tr.innerHTML = `<td colspan="9" class="cat-row">\u25B8 ${s.cat}</td>`;
       tbody.appendChild(tr);
       return;
     }
@@ -810,10 +930,19 @@ function buildSvcTable() {
       </td>
       <td>
         <input type="number" id="q_${s.id}" value="${s.fixed || 1}" min="0" step="0.5" ${fixed}
-               oninput="recalc()" style="width:80px;text-align:right">
+               oninput="recalc()" style="width:70px;text-align:right">
         <span style="font-size:11px;color:var(--gray)"> ${s.unit}</span>
       </td>
-      <td class="amt-dim">${s.rate.toFixed(2)}</td>
+      <td>
+        <input type="number" id="a_${s.id}" value="${s.rate}" min="0" step="1"
+               oninput="recalc()" style="width:80px;text-align:right">
+      </td>
+      <td>
+        <select id="pb_${s.id}" onchange="recalc()" style="width:100%;">
+          <option value="einsatz">pro Einsatz/Einheit</option>
+          <option value="monat">Pauschal pro Monat</option>
+        </select>
+      </td>
       <td class="amt" id="e_${s.id}">—</td>
       <td class="amt" id="m_${s.id}">—</td>
     `;
@@ -826,121 +955,187 @@ function buildRoomGrid() {
   grid.innerHTML = '';
   ROOMS.forEach((room, ri) => {
     const card = document.createElement('div');
-    card.className = 'room-card';
+    card.className = 'room-card inactive';
+    card.dataset.room = ri;
+    card.dataset.name = room.name;
     let tasksHtml = room.tasks.map((t,ti) => `
       <div class="room-task">
-        <input type="checkbox" id="r_${ri}_${ti}" checked>
+        <input type="checkbox" class="rtask" id="r_${ri}_${ti}" checked onchange="recalc()">
         <label for="r_${ri}_${ti}">${t}</label>
       </div>`).join('');
     let extrasHtml = room.extras.map((e, ei) => `
-      <div class="room-task" style="opacity:0.75">
-        <input type="checkbox" id="r_${ri}_e${ei}">
+      <div class="room-task is-extra" style="opacity:0.75">
+        <input type="checkbox" class="rtask" id="r_${ri}_e${ei}" onchange="recalc()">
         <label for="r_${ri}_e${ei}" style="font-style:italic;color:var(--gray)">${e}</label>
       </div>`).join('');
     card.innerHTML = `
-      <div class="room-card-hdr">${room.name}</div>
-      <div class="room-card-body">${tasksHtml}${extrasHtml}</div>
+      <label class="room-card-hdr">
+        <input type="checkbox" class="room-active" onchange="toggleRoom(this)">
+        <span>${room.name}</span>
+      </label>
+      <div class="room-card-body">
+        ${tasksHtml}${extrasHtml}
+        <div class="task-add-row">
+          <button type="button" class="btn-mini" onclick="addTask(this)">+ Aufgabe hinzufügen</button>
+        </div>
+      </div>
     `;
     grid.appendChild(card);
   });
+  updateRoomCount();
 }
 
-// ── Zusätzliche (frei erfassbare) Zimmer ──
-function customRoomTasksHtml(r) {
-  if (r.templateIdx === '' || r.templateIdx == null) {
-    return '<p class="room-note" style="padding-left:0;margin:0">Keine Vorlage gewählt – nur eigene Aufgaben unten.</p>';
-  }
-  const room = ROOMS[r.templateIdx];
-  if (!room) return '';
-  let html = room.tasks.map((t, ti) => `
-    <div class="room-task">
-      <input type="checkbox" id="cr_${r.id}_t${ti}" ${r.checkedTasks?.[ti] === false ? '' : 'checked'}>
-      <label for="cr_${r.id}_t${ti}">${t}</label>
-    </div>`).join('');
-  html += room.extras.map((e, ei) => `
-    <div class="room-task" style="opacity:0.75">
-      <input type="checkbox" id="cr_${r.id}_e${ei}" ${r.checkedExtras?.[ei] ? 'checked' : ''}>
-      <label for="cr_${r.id}_e${ei}" style="font-style:italic;color:var(--gray)">${e}</label>
-    </div>`).join('');
-  return html;
+// Raum aus-/abwählen
+function toggleRoom(cb) {
+  const card = cb.closest('.room-card');
+  card.classList.toggle('inactive', !cb.checked);
+  updateRoomCount();
+  recalc();
 }
 
-function customRoomCardHtml(r) {
-  const templateOpts = ['<option value="">— Eigenes Zimmer (keine Vorlage) —</option>']
-    .concat(ROOMS.map((room, idx) => `<option value="${idx}" ${String(r.templateIdx) === String(idx) ? 'selected' : ''}>${room.name}</option>`))
-    .join('');
-  return `
-    <div class="room-card" id="cr_card_${r.id}">
-      <div class="room-card-hdr" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-        <input type="text" id="cr_name_${r.id}" placeholder="z. B. Schlafzimmer 2 (Kind)" value="${r.name || ''}"
-               style="flex:1;font-weight:700;border:1px solid var(--border);border-radius:4px;padding:4px 6px;font-size:13px;" oninput="recalc()">
-        <button type="button" class="btn-remove-obj" style="margin:0;padding:3px 9px;" onclick="removeCustomRoom(${r.id})">✕</button>
-      </div>
-      <div class="room-card-body">
-        <div style="margin-bottom:8px">
-          <label class="fl" style="margin-bottom:2px">Aufgaben-Vorlage</label>
-          <select onchange="setCustomRoomTemplate(${r.id}, this.value)" style="font-size:12px;padding:4px 6px;width:100%;">${templateOpts}</select>
-        </div>
-        <div id="cr_tasks_${r.id}">${customRoomTasksHtml(r)}</div>
-        <div style="margin-top:8px">
-          <label class="fl" style="margin-bottom:2px">Zusätzliche eigene Aufgaben (eine pro Zeile)</label>
-          <textarea id="cr_extra_${r.id}" rows="2" placeholder="z. B. Fenster innen putzen" oninput="recalc()" style="width:100%;font-size:12px;">${r.extraText || ''}</textarea>
-        </div>
+function setAllRooms(on) {
+  document.querySelectorAll('#room-grid .room-card .room-active').forEach(cb => {
+    cb.checked = on;
+    cb.closest('.room-card').classList.toggle('inactive', !on);
+  });
+  updateRoomCount();
+  recalc();
+}
+
+function updateRoomCount() {
+  const n = document.querySelectorAll('#room-grid .room-active:checked').length;
+  const el = document.getElementById('room-count');
+  if (el) el.textContent = n === 1 ? '1 Raum ausgewählt' : n + ' Räume ausgewählt';
+}
+
+// Eigene Aufgabe zu einem Raum hinzufügen
+function addTask(btn) {
+  const body = btn.closest('.room-card-body');
+  const row = document.createElement('div');
+  row.className = 'room-task';
+  row.innerHTML = `
+    <input type="checkbox" class="rtask" checked onchange="recalc()">
+    <input type="text" class="rtask-custom" placeholder="Eigene Aufgabe eingeben …" oninput="recalc()">
+    <button type="button" class="btn-mini" onclick="this.closest('.room-task').remove();recalc()" title="Entfernen">✕</button>`;
+  body.insertBefore(row, btn.closest('.task-add-row'));
+  row.querySelector('.rtask-custom').focus();
+}
+
+// Eigenen Raum hinzufügen
+let _customRoomNr = 0;
+function addCustomRoom() {
+  _customRoomNr++;
+  const grid = document.getElementById('room-grid');
+  const card = document.createElement('div');
+  card.className = 'room-card room-card-custom';
+  card.dataset.custom = '1';
+  card.innerHTML = `
+    <label class="room-card-hdr">
+      <input type="checkbox" class="room-active" checked onchange="toggleRoom(this)">
+      <input type="text" class="rname" placeholder="Raumbezeichnung (z. B. Keller)" value="Eigener Raum ${_customRoomNr}" oninput="recalc()">
+      <button type="button" class="btn-mini" style="color:#fff;border-color:#fff;background:transparent"
+              onclick="this.closest('.room-card').remove();updateRoomCount();recalc()" title="Raum entfernen">✕</button>
+    </label>
+    <div class="room-card-body">
+      <div class="task-add-row">
+        <button type="button" class="btn-mini" onclick="addTask(this)">+ Aufgabe hinzufügen</button>
       </div>
     </div>`;
+  grid.appendChild(card);
+  updateRoomCount();
+  addTask(card.querySelector('.task-add-row button'));
+  recalc();
 }
 
-function renderCustomRooms() {
-  const grid = document.getElementById('custom-room-grid');
-  grid.innerHTML = customRooms.map(customRoomCardHtml).join('');
-}
+// ═══════════════════════════════════════════════════════════
+// ABGABEREINIGUNG
+// ═══════════════════════════════════════════════════════════
+const AB_AREAS = [
+  'Badezimmer / WC', 'Dusche / Nasszelle', 'Küche', 'Wohn-/Esszimmer', 'Schlafzimmer',
+  'Zimmer (allgemein)', 'Gang / Korridor', 'Eingang / Entrée', 'Treppenhaus',
+  'Reduit / Abstellraum', 'Keller', 'Estrich / Dachboden', 'Waschküche',
+  'Garage', 'Einstellplatz / Parkplatz', 'Balkon', 'Terrasse / Sitzplatz', 'Garten',
+];
 
-function syncCustomRoomsFromDOM() {
-  customRooms.forEach(r => {
-    const nameEl = document.getElementById('cr_name_' + r.id);
-    const extraEl = document.getElementById('cr_extra_' + r.id);
-    if (nameEl) r.name = nameEl.value;
-    if (extraEl) r.extraText = extraEl.value;
-    if (r.templateIdx !== '' && r.templateIdx != null) {
-      const room = ROOMS[r.templateIdx];
-      if (room) {
-        r.checkedTasks = {};
-        room.tasks.forEach((t, ti) => {
-          r.checkedTasks[ti] = document.getElementById(`cr_${r.id}_t${ti}`)?.checked ?? true;
-        });
-        r.checkedExtras = {};
-        room.extras.forEach((e, ei) => {
-          r.checkedExtras[ei] = document.getElementById(`cr_${r.id}_e${ei}`)?.checked ?? false;
-        });
-      }
-    }
+function buildAbAreas() {
+  const grid = document.getElementById('ab-areas');
+  grid.innerHTML = '';
+  AB_AREAS.forEach((name, i) => {
+    const div = document.createElement('div');
+    div.className = 'ab-area';
+    div.dataset.name = name;
+    div.innerHTML = `
+      <input type="number" class="ab-count" value="0" min="0" step="1" oninput="recalc()">
+      <label>${name}</label>`;
+    grid.appendChild(div);
   });
 }
 
-function setCustomRoomTemplate(id, val) {
-  const r = customRooms.find(x => x.id === id);
-  if (!r) return;
-  r.templateIdx = val;
-  r.checkedTasks = {};
-  r.checkedExtras = {};
-  const el = document.getElementById('cr_tasks_' + id);
-  if (el) el.innerHTML = customRoomTasksHtml(r);
+function addAbArea() {
+  const grid = document.getElementById('ab-areas');
+  const div = document.createElement('div');
+  div.className = 'ab-area';
+  div.dataset.custom = '1';
+  div.innerHTML = `
+    <input type="number" class="ab-count" value="1" min="0" step="1" oninput="recalc()">
+    <input type="text" class="ab-cname" placeholder="eigene Fläche …" oninput="recalc()">
+    <button type="button" class="btn-mini" onclick="this.closest('.ab-area').remove();recalc()" title="Entfernen">✕</button>`;
+  grid.appendChild(div);
+  div.querySelector('.ab-cname').focus();
+}
+
+// Master-Schalter: Body aktivieren/deaktivieren
+function onAbAktiv() {
+  const on = document.getElementById('ab_aktiv')?.checked;
+  document.getElementById('ab-body')?.classList.toggle('disabled', !on);
   recalc();
 }
 
-function addCustomRoom() {
-  syncCustomRoomsFromDOM();
-  _customRoomSeq++;
-  customRooms.push({ id: _customRoomSeq, templateIdx: '', name: '', extraText: '', checkedTasks: {}, checkedExtras: {} });
-  renderCustomRooms();
-  recalc();
+// Abgabereinigung-Daten einsammeln
+function collectAbData() {
+  if (!document.getElementById('ab_aktiv')?.checked) return null;
+  const areas = [];
+  document.querySelectorAll('#ab-areas .ab-area').forEach(div => {
+    const cnt = parseInt(div.querySelector('.ab-count')?.value) || 0;
+    if (cnt <= 0) return;
+    const cname = div.querySelector('.ab-cname');
+    const name = cname ? cname.value.trim() : (div.dataset.name || '');
+    if (!name) return;
+    areas.push({ name, count: cnt });
+  });
+  const mwst = parseFloat(document.getElementById('ab_mwst')?.value) || 0;
+  const netto = parseFloat(document.getElementById('ab_pauschale')?.value) || 0;
+  return {
+    garantie:  document.getElementById('ab_garantie')?.value || 'mit',
+    objekt:    document.getElementById('ab_objekt')?.value || 'Wohnung',
+    zimmer:    parseFloat(document.getElementById('ab_zimmer')?.value) || 0,
+    m2:        parseFloat(document.getElementById('ab_m2')?.value) || 0,
+    areas,
+    bemerkungen: document.getElementById('ab_bemerkungen')?.value || '',
+    mwst, netto, brutto: netto * (1 + mwst/100),
+  };
 }
 
-function removeCustomRoom(id) {
-  syncCustomRoomsFromDOM();
-  customRooms = customRooms.filter(r => r.id !== id);
-  renderCustomRooms();
-  recalc();
+// Ausgewählte Räume + Aufgaben für den Vertrag einsammeln
+function collectRoomData() {
+  const out = [];
+  document.querySelectorAll('#room-grid .room-card').forEach(card => {
+    const active = card.querySelector('.room-active');
+    if (!active || !active.checked) return;
+    const nameInput = card.querySelector('.rname');
+    const name = nameInput ? (nameInput.value.trim() || 'Eigener Raum') : (card.dataset.name || 'Raum');
+    const lines = [];
+    card.querySelectorAll('.room-task').forEach(row => {
+      const cb = row.querySelector('input[type=checkbox]');
+      if (!cb) return;
+      const custom = row.querySelector('.rtask-custom');
+      const label = custom ? custom.value.trim() : (row.querySelector('label')?.textContent.trim() || '');
+      if (!label) return;
+      lines.push({ label, checked: cb.checked, isExtra: row.classList.contains('is-extra') });
+    });
+    if (lines.length) out.push({ name, lines });
+  });
+  return out;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -949,6 +1144,38 @@ function removeCustomRoom(id) {
 function getMonthlyFactor(v) {
   if (v === 'main') v = document.getElementById('e_turnus').value;
   return MONTHLY[v] ?? 0;
+}
+
+// Vergütungsart gewechselt – Pauschal-Panel ein-/ausblenden
+function onVergtyp() {
+  const isP = document.getElementById('z_vergtyp').value === 'pauschale';
+  const panel = document.getElementById('pauschal-panel');
+  if (panel) panel.style.display = isP ? 'block' : 'none';
+  recalc();
+}
+
+const PMAXBASIS_LBL = { einsatz:'Einsatz/Turnus', monat:'Monat', woche:'Woche' };
+
+function readPauschale() {
+  return {
+    betrag:  parseFloat(document.getElementById('p_betrag')?.value)  || 0,
+    basis:   document.getElementById('p_basis')?.value || 'einsatz',
+    maxstd:  parseFloat(document.getElementById('p_maxstd')?.value) || 0,
+    maxbasis:document.getElementById('p_maxbasis')?.value || 'einsatz',
+  };
+}
+
+// Vermerk-Text zum Pauschalangebot (max. Stunden pro Einheit/Turnus)
+function pauschalNoteText(p, ansatz) {
+  if (!p || p.betrag <= 0) return '';
+  let t = 'Im Pauschalpreis sind max. ' + fmtStd(p.maxstd) + ' pro ' + (PMAXBASIS_LBL[p.maxbasis] || 'Einsatz') + ' eingerechnet.';
+  if (ansatz > 0) t += ' Darüber hinausgehende Stunden werden zum Ansatz von ' + fmtCHF(ansatz) + '/h verrechnet.';
+  return t;
+}
+
+function fmtStd(n) {
+  const v = Number(n) || 0;
+  return (Number.isInteger(v) ? v : v.toFixed(1).replace('.', ',')) + ' Std.';
 }
 
 function calcTravel() {
@@ -976,14 +1203,25 @@ function recalc() {
       document.getElementById('m_' + s.id).textContent = '—';
       return;
     }
-    const amtEinsatz = qty * s.rate;
-    const amtMonat = amtEinsatz * factor;
+    // Editierbarer Ansatz/Preis + Preisbasis (pro Einsatz/Einheit oder pauschal pro Monat)
+    const rate = parseFloat(document.getElementById('a_' + s.id)?.value);
+    const usedRate = Number.isFinite(rate) ? rate : s.rate;
+    const basis = document.getElementById('pb_' + s.id)?.value || 'einsatz';
+    const base = qty * usedRate;
+    let amtEinsatz, amtMonat;
+    if (basis === 'monat') {
+      amtMonat   = base;                       // Pauschalpreis gilt direkt pro Monat
+      amtEinsatz = factor ? base / factor : base;
+    } else {
+      amtEinsatz = base;                       // Preis pro Einsatz/Einheit
+      amtMonat   = base * factor;              // hochgerechnet auf den Monat
+    }
     totalEinsatz += amtEinsatz;
     totalMonat += amtMonat;
 
-    document.getElementById('e_' + s.id).textContent = fmtCHF(amtEinsatz);
+    document.getElementById('e_' + s.id).textContent = basis === 'monat' && !factor ? '—' : fmtCHF(amtEinsatz);
     document.getElementById('m_' + s.id).textContent = fmtCHF(amtMonat);
-    rows.push({ name: s.name, turnusLabel, qty, unit: s.unit, rate: s.rate, amtEinsatz, amtMonat });
+    rows.push({ name: s.name, turnusLabel, qty, unit: s.unit, rate: usedRate, basis, amtEinsatz, amtMonat });
   });
 
   // Travel
@@ -997,15 +1235,44 @@ function recalc() {
   const totalEinsatzBrutto = totalEinsatz * (1 + mwst/100);
   const totalMonatBrutto = totalMonat * (1 + mwst/100);
 
+  // ── Pauschalangebot: überschreibt das dargestellte Total ──
+  const isPauschale = document.getElementById('z_vergtyp')?.value === 'pauschale';
+  const pauschale = readPauschale();
+  const zAnsatz = parseFloat(document.getElementById('z_ansatz')?.value) || 0;
+  let dispEinsatzBrutto = totalEinsatzBrutto;
+  let dispMonatBrutto   = totalMonatBrutto;
+  let pEinsatzNet = 0, pMonatNet = 0;
+  const usePauschale = isPauschale && pauschale.betrag > 0;
+  if (usePauschale) {
+    if (pauschale.basis === 'einsatz') {
+      pEinsatzNet = pauschale.betrag;
+      pMonatNet   = pauschale.betrag * mainFactor;
+    } else {
+      pMonatNet   = pauschale.betrag;
+      pEinsatzNet = mainFactor ? pauschale.betrag / mainFactor : pauschale.betrag;
+    }
+    dispEinsatzBrutto = pEinsatzNet * (1 + mwst/100);
+    dispMonatBrutto   = pMonatNet   * (1 + mwst/100);
+  }
+
+  // Pauschal-Vermerk (Hinweis-Box im Panel)
+  const hintEl = document.getElementById('p_hint');
+  if (hintEl) {
+    hintEl.textContent = pauschale.betrag > 0
+      ? pauschalNoteText(pauschale, zAnsatz)
+      : 'Sobald ein Pauschalpreis > 0 erfasst ist, erscheint hier der Vermerk zu den maximal inbegriffenen Stunden.';
+  }
+
   // Labels
   const turnusLabels = { daily:'täglich', weekly:'wöchentlich', '14days':'alle 14 Tage', monthly:'monatlich', once:'einmalig' };
   const tLabel = turnusLabels[mainTurnus] || '—';
 
-  document.getElementById('s_pereinsatz').textContent = fmtCHF(totalEinsatzBrutto);
-  document.getElementById('s_pereinsatz_sub').textContent = `Standardeinsatz (${tLabel})`;
-  document.getElementById('s_permonat').textContent = fmtCHF(totalMonatBrutto);
+  document.getElementById('s_pereinsatz').textContent = fmtCHF(dispEinsatzBrutto);
+  document.getElementById('s_pereinsatz_sub').textContent =
+    usePauschale ? `Pauschalpreis (${tLabel})` : `Standardeinsatz (${tLabel})`;
+  document.getElementById('s_permonat').textContent = fmtCHF(dispMonatBrutto);
   document.getElementById('s_permonat_sub').textContent =
-    mwst > 0 ? `inkl. ${mwst}% MWST` : 'exkl. MWST (Kleinunternehmer)';
+    (usePauschale ? 'Pauschale · ' : '') + (mwst > 0 ? `inkl. ${mwst}% MWST` : 'exkl. MWST (Kleinunternehmer)');
 
   // Detail
   let det = rows.map(r =>
@@ -1018,17 +1285,32 @@ function recalc() {
     <span>${fmtCHF(travelAmt * mainFactor)}/Mt.</span>
   </div>`;
   if (mwst > 0) det += `<div class="summary-row"><span>MWST ${mwst}%</span><span>+${fmtCHF(totalMonat * mwst/100)}</span></div>`;
-  const zVergtypVal = document.getElementById('z_vergtyp')?.value || 'pauschale';
-  const pauschMaxH = parseFloat(document.getElementById('z_pausch_max_h')?.value) || 0;
-  const pauschEinheitLabel = { woche:'Woche', einsatz:'Einsatz', monat:'Monat' }[document.getElementById('z_pausch_einheit')?.value] || 'Woche';
-  if (zVergtypVal === 'pauschale' && pauschMaxH > 0) {
-    det += `<div class="summary-row"><span>Inkl. Stunden (Pauschale)</span><span>max. ${pauschMaxH} Std. / ${pauschEinheitLabel}</span></div>`;
+  if (usePauschale) {
+    det += `<div class="summary-row" style="color:var(--gray);font-style:italic"><span>Kalkulatorisches Total (Einzelpositionen)</span><span>${fmtCHF(totalMonatBrutto)}/Mt.</span></div>`;
+    det += `<div class="summary-row total"><span>PAUSCHALPREIS PRO MONAT</span><span>${fmtCHF(dispMonatBrutto)}</span></div>`;
+    const note = pauschalNoteText(pauschale, zAnsatz);
+    if (note) det += `<div class="summary-row" style="display:block;color:var(--navy);font-size:12px;padding-top:8px">${note}</div>`;
+  } else {
+    det += `<div class="summary-row total"><span>TOTAL PRO MONAT</span><span>${fmtCHF(totalMonatBrutto)}</span></div>`;
   }
-  det += `<div class="summary-row total"><span>TOTAL PRO MONAT</span><span>${fmtCHF(totalMonatBrutto)}</span></div>`;
   document.getElementById('s_detail').innerHTML = det;
 
+  // Abgabereinigung-Zusammenfassung
+  const ab = collectAbData();
+  const abSum = document.getElementById('ab_summary');
+  if (abSum) {
+    abSum.textContent = 'Pauschalpreis: ' + fmtCHF((parseFloat(document.getElementById('ab_pauschale')?.value)||0) * (1 + (parseFloat(document.getElementById('ab_mwst')?.value)||0)/100))
+      + ((parseFloat(document.getElementById('ab_mwst')?.value)||0) > 0 ? ' inkl. MWST' : ' exkl. MWST');
+  }
+
   // Store for contract generation
-  window._calc = { rows, travelAmt, totalEinsatz, totalMonat, totalEinsatzBrutto, totalMonatBrutto, mwst, mainTurnus, mainFactor };
+  window._calc = {
+    rows, travelAmt, totalEinsatz, totalMonat, totalEinsatzBrutto, totalMonatBrutto,
+    mwst, mainTurnus, mainFactor,
+    isPauschale: usePauschale, pauschale, zAnsatz,
+    pEinsatzNet, pMonatNet, dispEinsatzBrutto, dispMonatBrutto,
+    ab,
+  };
 
   // Live update contract if visible
   if (document.getElementById('tab-vertrag').classList.contains('active')) {
@@ -1038,6 +1320,13 @@ function recalc() {
 
 function fmtCHF(n) {
   return 'CHF\u00A0' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, "'");
+}
+
+// HTML-Escaping f\u00FCr frei eingegebene Texte (eigene R\u00E4ume / Aufgaben)
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 function fmtDate(iso) {
@@ -1173,8 +1462,6 @@ function generateContract() {
   const zAnsatz  = g('z_ansatz') || '45';
   const zVergtyp = g('z_vergtyp');
   const mwstRate = parseFloat(g('z_mwst')) || 0;
-  const zPauschMaxH = parseFloat(g('z_pausch_max_h')) || 0;
-  const zPauschEinheit = { woche:'Woche', einsatz:'Einsatz', monat:'Monat' }[g('z_pausch_einheit')] || 'Woche';
   const bemerkungen = g('r_bemerkungen');
 
   const turnusText = {
@@ -1185,6 +1472,13 @@ function generateContract() {
   const vergText = {
     pauschale:'Pauschalbetrag', stunden:'Stundenhonorar', monat:'Monatliche Vergütung'
   }[zVergtyp] || 'Pauschalbetrag';
+
+  // Pauschal-Angaben für den Vertrag
+  const isPausch   = !!c.isPauschale;
+  const pausch     = c.pauschale || {};
+  const einsatzBrutto = isPausch ? (c.dispEinsatzBrutto||0) : (c.totalEinsatzBrutto||0);
+  const monatBrutto   = isPausch ? (c.dispMonatBrutto||0)   : (c.totalMonatBrutto||0);
+  const pauschHinweis = isPausch ? pauschalNoteText(pausch, c.zAnsatz||parseFloat(zAnsatz)||0) : '';
 
   const rechnText = {
     monthly:'Monatlich', pereinsatz:'Pro Einsatz', hours:'Nach Stundenaufwand'
@@ -1202,14 +1496,25 @@ function generateContract() {
     const tv = document.getElementById('t_' + s.id)?.value || 'main';
     const tLabel = tv === 'main' ? turnusText : (TURNUS_OPTS.find(o=>o.v===tv)?.l || tv);
     const sym = checked ? '☑' : '☐';
-    const amt = checked ? fmtCHF(qty * s.rate) : '—';
-    const mAmt = checked ? fmtCHF(qty * s.rate * getMonthlyFactor(tv)) : '—';
+    // Editierbarer Ansatz/Preis + Preisbasis (pro Einsatz/Einheit oder pauschal pro Monat)
+    const rRate = parseFloat(document.getElementById('a_' + s.id)?.value);
+    const usedRate = Number.isFinite(rRate) ? rRate : s.rate;
+    const basis = document.getElementById('pb_' + s.id)?.value || 'einsatz';
+    const fac = getMonthlyFactor(tv);
+    const base = qty * usedRate;
+    const rowEinsatz = basis === 'monat' ? (fac ? base / fac : base) : base;
+    const rowMonat   = basis === 'monat' ? base : base * fac;
+    const mengeCell = checked ? (qty + ' ' + s.unit + (basis === 'monat' ? ' · pausch./Mt.' : '')) : '—';
+    // Bei globaler Pauschale: keine Einzelpreise – enthaltene Leistungen als „inkl."
+    const rateCell = isPausch ? '–' : fmtCHF(usedRate);
+    const amt  = isPausch ? (checked ? 'inkl.' : '—') : (checked ? (basis === 'monat' && !fac ? '—' : fmtCHF(rowEinsatz)) : '—');
+    const mAmt = isPausch ? (checked ? 'inkl.' : '—') : (checked ? fmtCHF(rowMonat) : '—');
     svcRows += `<tr>
       <td style="text-align:center;font-size:14px">${sym}</td>
       <td>${s.name}</td>
       <td style="text-align:center">${s.id}</td>
-      <td style="text-align:right">${checked ? qty + ' ' + s.unit : '—'}</td>
-      <td class="r">${fmtCHF(s.rate)}</td>
+      <td style="text-align:right">${mengeCell}</td>
+      <td class="r">${rateCell}</td>
       <td class="r">${amt}</td>
       <td class="r">${mAmt}</td>
     </tr>`;
@@ -1224,68 +1529,84 @@ function generateContract() {
     <td style="text-align:center">ANF15</td>
     <td style="text-align:right">1 ×</td>
     <td class="r">–</td>
-    <td class="r">${fmtCHF(travelAmt)}</td>
-    <td class="r">${fmtCHF(travelAmt * mainFactor)}</td>
+    <td class="r">${isPausch ? 'inkl.' : fmtCHF(travelAmt)}</td>
+    <td class="r">${isPausch ? 'inkl.' : fmtCHF(travelAmt * mainFactor)}</td>
   </tr>`;
-  if (mwstRate > 0) {
+  if (isPausch) {
+    // Kundenvertrag: nur der Pauschalpreis, keine Einzelkalkulation
     svcRows += `<tr class="total-row">
-      <td colspan="5" style="text-align:right">Zwischentotal (exkl. MWST)</td>
-      <td class="r">${fmtCHF(c.totalEinsatz||0)}</td>
-      <td class="r">${fmtCHF(c.totalMonat||0)}</td>
-    </tr>
-    <tr>
-      <td colspan="5" style="text-align:right">MWST ${mwstRate}%</td>
-      <td class="r">${fmtCHF((c.totalEinsatz||0)*mwstRate/100)}</td>
-      <td class="r">${fmtCHF((c.totalMonat||0)*mwstRate/100)}</td>
+      <td colspan="5" style="text-align:right;font-weight:700;color:var(--navy)">Pauschalpreis${mwstRate > 0 ? ' (inkl. ' + mwstRate + '% MWST)' : ' (exkl. MWST)'}</td>
+      <td class="r" style="color:var(--navy)">${fmtCHF(einsatzBrutto)}</td>
+      <td class="r" style="color:var(--navy)">${fmtCHF(monatBrutto)}</td>
+    </tr>`;
+    if (pauschHinweis) {
+      svcRows += `<tr><td colspan="7" style="font-size:11.5px;color:var(--navy);background:#f5f8fc">${pauschHinweis}</td></tr>`;
+    }
+  } else {
+    if (mwstRate > 0) {
+      svcRows += `<tr class="total-row">
+        <td colspan="5" style="text-align:right">Zwischentotal (exkl. MWST)</td>
+        <td class="r">${fmtCHF(c.totalEinsatz||0)}</td>
+        <td class="r">${fmtCHF(c.totalMonat||0)}</td>
+      </tr>
+      <tr>
+        <td colspan="5" style="text-align:right">MWST ${mwstRate}%</td>
+        <td class="r">${fmtCHF((c.totalEinsatz||0)*mwstRate/100)}</td>
+        <td class="r">${fmtCHF((c.totalMonat||0)*mwstRate/100)}</td>
+      </tr>`;
+    }
+    svcRows += `<tr class="total-row">
+      <td colspan="5" style="text-align:right;font-weight:700">TOTAL</td>
+      <td class="r">${fmtCHF(c.totalEinsatzBrutto||0)}</td>
+      <td class="r">${fmtCHF(c.totalMonatBrutto||0)}</td>
     </tr>`;
   }
-  svcRows += `<tr class="total-row">
-    <td colspan="5" style="text-align:right;font-weight:700">TOTAL</td>
-    <td class="r">${fmtCHF(c.totalEinsatzBrutto||0)}</td>
-    <td class="r">${fmtCHF(c.totalMonatBrutto||0)}</td>
-  </tr>`;
 
-  // Rooms
+  // Rooms – nur die ausgewählten Räume mit ihren Aufgaben
   let roomRows = '';
-  ROOMS.forEach((room, ri) => {
-    roomRows += `<tr><td colspan="2" class="room-hdr">${room.name}</td></tr>`;
-    room.tasks.forEach((t, ti) => {
-      const checked = document.getElementById('r_' + ri + '_' + ti)?.checked;
-      roomRows += `<tr>
-        <td class="sym">${checked ? '☑' : '☐'}</td>
-        <td>${t}</td>
-      </tr>`;
+  const selectedRooms = collectRoomData();
+  if (selectedRooms.length === 0) {
+    roomRows += `<tr><td colspan="2" class="note" style="padding:10px 12px">Es wurden noch keine Räume ausgewählt. Bitte in Abschnitt „Raumcheckliste“ die gewünschten Räume anhaken.</td></tr>`;
+  } else {
+    selectedRooms.forEach(room => {
+      roomRows += `<tr><td colspan="2" class="room-hdr">${esc(room.name)}</td></tr>`;
+      room.lines.forEach(l => {
+        roomRows += `<tr><td class="sym">${l.checked ? '☑' : '☐'}</td><td class="${l.checked ? '' : 'note'}">${esc(l.label)}</td></tr>`;
+      });
     });
-    room.extras.forEach((e, ei) => {
-      const checked = document.getElementById(`r_${ri}_e${ei}`)?.checked;
-      roomRows += `<tr><td class="sym">${checked ? '☑' : '☐'}</td><td class="${checked ? '' : 'note'}">${e}</td></tr>`;
-    });
-  });
-  customRooms.forEach(r => {
-    const roomName = (document.getElementById('cr_name_' + r.id)?.value || '').trim() || 'Zusätzliches Zimmer';
-    roomRows += `<tr><td colspan="2" class="room-hdr">${roomName}</td></tr>`;
-    if (r.templateIdx !== '' && r.templateIdx != null) {
-      const room = ROOMS[r.templateIdx];
-      if (room) {
-        room.tasks.forEach((t, ti) => {
-          const checked = document.getElementById(`cr_${r.id}_t${ti}`)?.checked;
-          roomRows += `<tr><td class="sym">${checked ? '☑' : '☐'}</td><td>${t}</td></tr>`;
-        });
-        room.extras.forEach((e, ei) => {
-          const checked = document.getElementById(`cr_${r.id}_e${ei}`)?.checked;
-          roomRows += `<tr><td class="sym">${checked ? '☑' : '☐'}</td><td class="${checked ? '' : 'note'}">${e}</td></tr>`;
-        });
-      }
-    }
-    const extraLines = (document.getElementById('cr_extra_' + r.id)?.value || '')
-      .split('\n').map(l => l.trim()).filter(Boolean);
-    extraLines.forEach(line => {
-      roomRows += `<tr><td class="sym">☑</td><td>${line}</td></tr>`;
-    });
-  });
+  }
   if (bemerkungen) {
     roomRows += `<tr><td colspan="2" class="room-hdr" style="background:var(--green)">Sonderwünsche / Bemerkungen</td></tr>
       <tr><td colspan="2" style="white-space:pre-wrap;padding:8px 10px">${bemerkungen}</td></tr>`;
+  }
+
+  // Abgabereinigung-Anhang – nur wenn aktiviert
+  const abData = collectAbData();
+  let abBlock = '';
+  if (abData) {
+    const gar = abData.garantie === 'mit' ? 'Mit Abgabegarantie' : 'Ohne Abgabegarantie';
+    const areaRows = abData.areas.length
+      ? abData.areas.map(a => `<tr><td class="sym">${a.count} ×</td><td>${esc(a.name)}</td></tr>`).join('')
+      : `<tr><td colspan="2" class="note" style="padding:8px 10px">Keine Flächen erfasst.</td></tr>`;
+    abBlock = `
+    <div class="page-break"></div>
+    <div class="c-ahdr">Anhang 4 – Abgabereinigung (Wohnungsabgabe / Umzug)</div>
+    <table style="border-collapse:collapse;margin:6px 0 10px;font-size:13px;">
+      <tr><td style="padding:3px 16px 3px 0;color:var(--gray)">Objekt:</td><td><strong>${esc(abData.objekt)}</strong></td></tr>
+      <tr><td style="padding:3px 16px 3px 0;color:var(--gray)">Abgabegarantie:</td><td><strong>${gar}</strong></td></tr>
+      <tr><td style="padding:3px 16px 3px 0;color:var(--gray)">Anzahl Zimmer:</td><td><strong>${abData.zimmer || '—'}</strong></td></tr>
+      <tr><td style="padding:3px 16px 3px 0;color:var(--gray)">Fläche:</td><td><strong>${abData.m2 ? abData.m2 + ' m²' : '—'}</strong></td></tr>
+    </table>
+    <p class="c-p" style="font-weight:700;margin-bottom:2px">Zu reinigende Räume &amp; Aussenflächen</p>
+    <table class="check-tbl">${areaRows}</table>
+    ${abData.bemerkungen ? `<p class="c-p" style="font-weight:700;margin:10px 0 2px">Bemerkungen zum Zustand</p><p class="c-p" style="white-space:pre-wrap">${esc(abData.bemerkungen)}</p>` : ''}
+    <table style="border-collapse:collapse;margin:12px 0 4px;font-size:14px;">
+      <tr><td style="padding:4px 16px 4px 0;color:var(--navy)">Pauschalpreis Abgabereinigung:</td>
+          <td style="font-weight:700;color:var(--navy)">${fmtCHF(abData.brutto)} <span style="font-weight:400;font-size:12px;color:var(--gray)">${abData.mwst > 0 ? 'inkl. ' + abData.mwst + '% MWST' : 'exkl. MWST'}</span></td></tr>
+    </table>
+    <p class="c-p" style="font-size:11px;color:var(--gray)">${abData.garantie === 'mit'
+      ? 'Mit Abgabegarantie: Werden bei der offiziellen Wohnungsabgabe Punkte durch die Verwaltung/Vermieterschaft beanstandet, erfolgt die Nachreinigung der bemängelten Stellen kostenlos (Termin nach Absprache).'
+      : 'Ohne Abgabegarantie: Eine kostenlose Nachreinigung bei Beanstandungen ist nicht eingeschlossen.'}</p>`;
   }
 
   const logo64 = `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`;
@@ -1358,19 +1679,19 @@ function generateContract() {
   <!-- ART. 4 -->
   <div class="c-section">
     <div class="c-hdr">4. Vergütung und Zahlungsbedingungen</div>
-    <p class="c-p">Vergütungsart: <strong>${vergText}</strong>. Die detaillierte Leistungsübersicht mit Einzelpreisen und berechnetem Total ist in <strong>Anhang 2</strong> aufgeführt.</p>
-    ${zVergtyp === 'pauschale' && zPauschMaxH > 0 ? `<p class="c-p">Die vereinbarte Pauschale beinhaltet maximal <strong>${zPauschMaxH} Stunden pro ${zPauschEinheit}</strong>. Reinigungsleistungen, die über dieses Stundenkontingent hinausgehen, werden zusätzlich zum Ansatz für Zusatzstunden von <strong>${fmtCHF(parseFloat(zAnsatz)||0)}/h</strong> verrechnet.</p>` : ''}
+    <p class="c-p">Vergütungsart: <strong>${vergText}</strong>. Die Leistungsübersicht ist in <strong>Anhang 2</strong> aufgeführt.</p>
     <table style="border-collapse:collapse;margin:6px 0 10px;font-size:13px;width:auto">
       <tr>
-        <td style="padding:4px 14px 4px 0;white-space:nowrap;color:var(--gray)">Vergütung pro Standardeinsatz:</td>
-        <td style="padding:4px 0;font-weight:700;color:var(--navy)">${fmtCHF(c.totalEinsatzBrutto||0)}</td>
+        <td style="padding:4px 14px 4px 0;white-space:nowrap;color:var(--gray)">${isPausch ? 'Pauschalpreis pro Einsatz:' : 'Vergütung pro Standardeinsatz:'}</td>
+        <td style="padding:4px 0;font-weight:700;color:var(--navy)">${fmtCHF(einsatzBrutto)}</td>
       </tr>
       <tr>
-        <td style="padding:4px 14px 4px 0;white-space:nowrap;color:var(--gray)">Monatliche Gesamtvergütung:</td>
-        <td style="padding:4px 0;font-weight:700;color:var(--navy)">${fmtCHF(c.totalMonatBrutto||0)}
+        <td style="padding:4px 14px 4px 0;white-space:nowrap;color:var(--gray)">${isPausch ? 'Pauschalpreis pro Monat:' : 'Monatliche Gesamtvergütung:'}</td>
+        <td style="padding:4px 0;font-weight:700;color:var(--navy)">${fmtCHF(monatBrutto)}
           <span style="font-weight:400;font-size:12px;color:var(--gray)">${mwstRate > 0 ? ' inkl. ' + mwstRate + '% MWST' : ' exkl. MWST'}</span></td>
       </tr>
     </table>
+    ${isPausch && pauschHinweis ? `<p class="c-p" style="background:#f5f8fc;border-left:3px solid var(--navy);padding:6px 10px"><strong>Pauschalangebot:</strong> ${pauschHinweis}</p>` : ''}
     <p class="c-p">Für Zusatzleistungen ausserhalb des vereinbarten Umfangs gilt ein Stundensatz von <strong>${fmtCHF(parseFloat(zAnsatz)||0)}/h</strong> (ohne MWST).</p>
     <p class="c-p">Rechnungsstellung: <strong>${rechnText}</strong>. Zahlungsfrist: <strong>${eZfrist} Tage</strong> nach Rechnungsstellung.</p>
   </div>
@@ -1515,6 +1836,8 @@ function generateContract() {
       </tr>
     </tbody>
   </table>
+  ${abBlock}
+
   <p style="font-size:11px;color:var(--gray);margin-top:16px;text-align:right">
     Stand: August 2026 &nbsp;|&nbsp; Rekaj Reinigung, Hanife Rekaj
   </p>
