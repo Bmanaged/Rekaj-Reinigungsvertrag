@@ -366,15 +366,14 @@ input[readonly], input[disabled] { background: var(--light); color: var(--gray);
       <span>2. Objektadresse(n)</span><span class="toggle">▾</span>
     </div>
     <div class="section-body">
+      <p class="room-note" style="padding-left:0;margin:0 0 10px">Erfasse <strong>Art und Grösse</strong> des Objekts (Anzahl Zimmer, m²). Ist die Objektadresse identisch mit der Rechnungsadresse, lass das Häkchen gesetzt – dann wird die Adresse automatisch übernommen.</p>
       <label class="obj-toggle">
         <input type="checkbox" id="o_identisch" checked onchange="toggleObjektIdentisch()">
         <span>Objektadresse ist identisch mit der Rechnungsadresse</span>
       </label>
       <p class="room-note" style="padding-left:26px;margin:4px 0 12px">Häkchen entfernen, wenn die Reinigung an einer oder mehreren anderen Adressen stattfindet (z.&nbsp;B. Wohnung und Büro).</p>
-      <div id="objekt-fields" style="display:none">
-        <div id="objekt-liste"></div>
-        <button type="button" class="btn btn-outline" style="padding:6px 12px;font-size:13px;margin-top:2px" onclick="addObjekt()">＋ Weitere Objektadresse</button>
-      </div>
+      <div id="objekt-liste"></div>
+      <button type="button" id="btn-add-objekt" class="btn btn-outline" style="padding:6px 12px;font-size:13px;margin-top:2px" onclick="addObjekt()">＋ Weiteres Objekt</button>
     </div>
   </div>
 
@@ -878,13 +877,6 @@ const ROOMS = [
     'Abstauben zugänglicher Oberflächen',
     'Entleeren des Abfalleimers',
   ], extras:['Nur wenn ausdrücklich vereinbart (optionale Leistung)']},
-  { name:'Ferienwohnung / Abnahmeobjekt', tasks:[
-    'Grundreinigung aller Räume',
-    'Küche: vollständige Reinigung inkl. Geräte',
-    'Bad/WC: vollständige Reinigung',
-    'Staubsaugen und feuchtes Aufnehmen aller Böden',
-    'Abnahme-Checkliste nach Absprache',
-  ], extras:['Abnahmereinigung nach Stundenansatz CHF 55/h']},
 ];
 
 // ═══════════════════════════════════════════════════════════
@@ -894,6 +886,7 @@ function init() {
   buildSvcTable();
   buildRoomGrid();
   buildAbAreas();
+  initObjekte();
   // default date = today
   document.getElementById('e_beginn').value = new Date().toISOString().slice(0,10);
   onVergtyp();
@@ -969,10 +962,15 @@ function buildRoomGrid() {
         <label for="r_${ri}_e${ei}" style="font-style:italic;color:var(--gray)">${e}</label>
       </div>`).join('');
     card.innerHTML = `
-      <label class="room-card-hdr">
-        <input type="checkbox" class="room-active" onchange="toggleRoom(this)">
-        <span>${room.name}</span>
-      </label>
+      <div class="room-card-hdr">
+        <label style="display:flex;align-items:center;gap:8px;flex:1;cursor:pointer;margin:0;font-weight:700;color:var(--navy);">
+          <input type="checkbox" class="room-active" onchange="toggleRoom(this)">
+          <span>${room.name}</span>
+        </label>
+        <span style="font-size:11px;color:var(--gray)">Anzahl</span>
+        <input type="number" class="room-anzahl" value="1" min="1" step="1" oninput="recalc()"
+               onclick="event.stopPropagation()" style="width:52px;text-align:right;">
+      </div>
       <div class="room-card-body">
         ${tasksHtml}${extrasHtml}
         <div class="task-add-row">
@@ -1124,6 +1122,7 @@ function collectRoomData() {
     if (!active || !active.checked) return;
     const nameInput = card.querySelector('.rname');
     const name = nameInput ? (nameInput.value.trim() || 'Eigener Raum') : (card.dataset.name || 'Raum');
+    const anzahl = Math.max(1, parseInt(card.querySelector('.room-anzahl')?.value) || 1);
     const lines = [];
     card.querySelectorAll('.room-task').forEach(row => {
       const cb = row.querySelector('input[type=checkbox]');
@@ -1133,7 +1132,7 @@ function collectRoomData() {
       if (!label) return;
       lines.push({ label, checked: cb.checked, isExtra: row.classList.contains('is-extra') });
     });
-    if (lines.length) out.push({ name, lines });
+    if (lines.length) out.push({ name, anzahl, lines });
   });
   return out;
 }
@@ -1354,17 +1353,33 @@ function updateZoneFields() {
 // OBJEKTADRESSEN
 // ═══════════════════════════════════════════════════════════
 let _objektNr = 0;
+const OBJEKT_ARTEN = ['Wohnung','Ferienwohnung','Haus','Büro','Geschäftsräumlichkeiten'];
 function objektRowHtml() {
   _objektNr++;
   const n = _objektNr;
+  const artOpts = OBJEKT_ARTEN.map(a => `<option value="${a}">${a}</option>`).join('');
   return `
     <div class="objekt-item">
       <div class="objekt-item-hdr">Objekt ${n}</div>
       <div class="grid2">
         <div>
-          <label class="fl">Bezeichnung</label>
-          <input type="text" class="o_bez" placeholder="z. B. Wohnung / Büro" oninput="recalc()">
+          <label class="fl">Art des Objekts</label>
+          <select class="o_art" onchange="recalc()">${artOpts}</select>
         </div>
+        <div>
+          <label class="fl">Bezeichnung (optional)</label>
+          <input type="text" class="o_bez" placeholder="z. B. Hauptwohnung / Büro OG" oninput="recalc()">
+        </div>
+        <div>
+          <label class="fl">Anzahl Zimmer</label>
+          <input type="number" class="o_zimmer" value="0" min="0" step="0.5" oninput="recalc()">
+        </div>
+        <div>
+          <label class="fl">Fläche m²</label>
+          <input type="number" class="o_m2" value="0" min="0" step="1" oninput="recalc()">
+        </div>
+      </div>
+      <div class="o-address grid2" style="margin-top:8px">
         <div>
           <label class="fl">Strasse / Nr.</label>
           <input type="text" class="o_str" placeholder="Musterstrasse 1" oninput="recalc()">
@@ -1402,35 +1417,73 @@ function removeObjekt(btn) {
   renumberObjekte();
   recalc();
 }
+// Stellt sicher, dass immer mindestens ein Objekt existiert
+function initObjekte() {
+  if (document.querySelectorAll('#objekt-liste .objekt-item').length === 0) {
+    document.getElementById('objekt-liste').insertAdjacentHTML('beforeend', objektRowHtml());
+  }
+  toggleObjektIdentisch();
+}
 function toggleObjektIdentisch() {
   const ident = document.getElementById('o_identisch').checked;
-  document.getElementById('objekt-fields').style.display = ident ? 'none' : 'block';
-  if (!ident && document.querySelectorAll('#objekt-liste .objekt-item').length === 0) {
-    addObjekt();
+  // Adressfelder nur bei abweichender Adresse zeigen (Art & Grösse bleiben immer sichtbar)
+  document.querySelectorAll('#objekt-liste .o-address').forEach(a => a.style.display = ident ? 'none' : '');
+  const btnAdd = document.getElementById('btn-add-objekt');
+  if (btnAdd) btnAdd.style.display = ident ? 'none' : 'inline-block';
+  if (ident) {
+    // Bei identischer Adresse nur EIN Objekt behalten
+    [...document.querySelectorAll('#objekt-liste .objekt-item')].slice(1).forEach(it => it.remove());
   }
+  renumberObjekte();
   recalc();
 }
-// Liefert Array von Objektadressen: {bezeichnung, strasse, plz, ort, full}
+// Liefert Array von Objekten: {art, bezeichnung, zimmer, m2, strasse, plz, ort, full}
 function collectObjekte() {
   const v = id => (document.getElementById(id)?.value || '').trim();
-  const mk = (bez, str, plz, ort) => ({
-    bezeichnung: bez, strasse: str, plz, ort,
-    full: [str, [plz, ort].filter(Boolean).join(' ')].filter(Boolean).join(', ')
-  });
-  const billing = mk('', v('k_strasse'), v('k_plz'), v('k_ort'));
-  if (document.getElementById('o_identisch')?.checked) return [billing];
-  const arr = [...document.querySelectorAll('#objekt-liste .objekt-item')].map(it => mk(
-    it.querySelector('.o_bez')?.value.trim() || '',
-    it.querySelector('.o_str')?.value.trim() || '',
-    it.querySelector('.o_plz')?.value.trim() || '',
-    it.querySelector('.o_ort')?.value.trim() || ''
-  )).filter(o => o.strasse || o.plz || o.ort || o.bezeichnung);
-  return arr.length ? arr : [billing];
+  const ident = document.getElementById('o_identisch')?.checked;
+  const rows = [...document.querySelectorAll('#objekt-liste .objekt-item')];
+  const readRow = (it, useBilling) => {
+    const str = useBilling ? v('k_strasse') : (it.querySelector('.o_str')?.value.trim() || '');
+    const plz = useBilling ? v('k_plz')     : (it.querySelector('.o_plz')?.value.trim() || '');
+    const ort = useBilling ? v('k_ort')     : (it.querySelector('.o_ort')?.value.trim() || '');
+    return {
+      art:         it.querySelector('.o_art')?.value || '',
+      bezeichnung: it.querySelector('.o_bez')?.value.trim() || '',
+      zimmer:      parseFloat(it.querySelector('.o_zimmer')?.value) || 0,
+      m2:          parseFloat(it.querySelector('.o_m2')?.value) || 0,
+      strasse: str, plz, ort,
+      full: [str, [plz, ort].filter(Boolean).join(' ')].filter(Boolean).join(', ')
+    };
+  };
+  if (!rows.length) {
+    const full = [v('k_strasse'), [v('k_plz'), v('k_ort')].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    return [{ art:'', bezeichnung:'', zimmer:0, m2:0, strasse:v('k_strasse'), plz:v('k_plz'), ort:v('k_ort'), full }];
+  }
+  if (ident) return [readRow(rows[0], true)];
+  return rows.map(it => readRow(it, false));
+}
+// Lesbares Etikett eines Objekts (Art, Grösse, Adresse) – escaped
+function objektLabel(o) {
+  const head = esc(o.bezeichnung || o.art || 'Objekt');
+  const sub = [];
+  if (o.art && o.bezeichnung) sub.push(esc(o.art));
+  if (o.zimmer) sub.push(o.zimmer + ' Zimmer');
+  if (o.m2) sub.push(o.m2 + ' m²');
+  const size = sub.length ? ' (' + sub.join(', ') + ')' : '';
+  return head + size + (o.full ? ' – ' + esc(o.full) : '');
 }
 // Objektadressen als Klartext (eine Zeile, für E-Mail)
 function objekteEineZeile() {
   return collectObjekte()
-    .map(o => (o.bezeichnung ? o.bezeichnung + ': ' : '') + (o.full || '—'))
+    .map(o => {
+      const head = o.bezeichnung || o.art || 'Objekt';
+      const sub = [];
+      if (o.art && o.bezeichnung) sub.push(o.art);
+      if (o.zimmer) sub.push(o.zimmer + ' Zimmer');
+      if (o.m2) sub.push(o.m2 + ' m²');
+      const size = sub.length ? ' (' + sub.join(', ') + ')' : '';
+      return head + size + (o.full ? ' – ' + o.full : '');
+    })
     .join('   |   ');
 }
 
@@ -1449,8 +1502,8 @@ function generateContract() {
   const kEmail   = g('k_email')  || '___________________________';
   const objekte  = collectObjekte();
   const objektInline = objekte.length === 1
-    ? `<strong>${(objekte[0].bezeichnung ? objekte[0].bezeichnung + ' – ' : '') + (objekte[0].full || '___________________________')}</strong>`
-    : objekte.map((o, i) => `<br>&nbsp;&nbsp;${i + 1}. <strong>${(o.bezeichnung ? o.bezeichnung + ' – ' : '') + o.full}</strong>`).join('');
+    ? `<strong>${objektLabel(objekte[0]) || '___________________________'}</strong>`
+    : objekte.map((o, i) => `<br>&nbsp;&nbsp;${i + 1}. <strong>${objektLabel(o)}</strong>`).join('');
   const eBeginn  = fmtDate(g('e_beginn'));
   const eTurnus  = g('e_turnus');
   const eWtag    = g('e_wochentag') || '___________';
@@ -1569,7 +1622,8 @@ function generateContract() {
     roomRows += `<tr><td colspan="2" class="note" style="padding:10px 12px">Es wurden noch keine Räume ausgewählt. Bitte in Abschnitt „Raumcheckliste“ die gewünschten Räume anhaken.</td></tr>`;
   } else {
     selectedRooms.forEach(room => {
-      roomRows += `<tr><td colspan="2" class="room-hdr">${esc(room.name)}</td></tr>`;
+      const anzText = room.anzahl > 1 ? ` (${room.anzahl}×)` : '';
+      roomRows += `<tr><td colspan="2" class="room-hdr">${esc(room.name)}${anzText}</td></tr>`;
       room.lines.forEach(l => {
         roomRows += `<tr><td class="sym">${l.checked ? '☑' : '☐'}</td><td class="${l.checked ? '' : 'note'}">${esc(l.label)}</td></tr>`;
       });
