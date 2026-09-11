@@ -303,6 +303,10 @@ input[readonly], input[disabled] { background: var(--light); color: var(--gray);
   .page-break { page-break-before: always; }
 }
 </style>
+<!-- EmailJS SDK (Auto-Versand der Mails) -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4.4.1/dist/email.min.js"></script>
+<!-- html2pdf: erzeugt den Vertrag als PDF-Anhang -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 <div class="page-wrap">
@@ -774,6 +778,133 @@ input[readonly], input[disabled] { background: var(--light); color: var(--gray);
 </div><!-- /page-wrap -->
 
 <script>
+// ═══════════════════════════════════════════════════════════
+// E-MAIL VERSAND (EmailJS) — HIER DEINE 3 WERTE EINTRAGEN
+// ───────────────────────────────────────────────────────────
+// So kommst du an die Werte:
+//   1. Konto erstellen auf https://www.emailjs.com (gratis)
+//   2. Email Services → Add Service → "Infomaniak" (SMTP):
+//        Host: mail.infomaniak.com | Port: 587 | User: info@rekaj-reinigung.ch
+//        Passwort: dein Postfach-Passwort
+//      → das ergibt die SERVICE_ID
+//   3. Email Templates → Create Template mit den Feldern unten
+//      (to_email, to_name, subject, message) → das ergibt die TEMPLATE_ID
+//   4. Account → General → das ist der PUBLIC_KEY
+//   5. Account → Security → erlaubte Domain(s) eintragen (Schutz vor Missbrauch)
+// Solange die Werte leer sind ("..."), öffnet sich weiterhin das Mailprogramm.
+// ═══════════════════════════════════════════════════════════
+const EMAILJS_CONFIG = {
+  PUBLIC_KEY:  '...',   // z.B. 'AbCd1234EfGh5678'
+  SERVICE_ID:  '...',   // z.B. 'service_xxxxxxx'
+  TEMPLATE_ID: '...',   // z.B. 'template_xxxxxxx'
+  BCC:         'info@rekaj-reinigung.ch'  // Kopie an Rekaj Reinigung
+};
+
+// ───────────────────────────────────────────────────────────
+// EMPFOHLEN: Direkter Versand über dein Infomaniak-Webhosting.
+// 1. Datei  send.php  ins Infomaniak-Webhosting hochladen
+//    (z. B. in einen Ordner  vertrag-mailer ).
+// 2. Die vollständige URL dieser Datei hier eintragen:
+const MAIL_ENDPOINT = 'https://www.rekaj-reinigung.ch/send.php';
+const MAIL_TOKEN    = '';   // nur falls du in send.php einen $TOKEN gesetzt hast (identisch)
+// Solange leer, wird EmailJS bzw. das Mailprogramm verwendet.
+// ───────────────────────────────────────────────────────────
+
+// Versendet den Vertrag server-seitig über Infomaniak (send.php).
+// true = versendet/behandelt, false = nicht konfiguriert/fehlgeschlagen → nächster Weg.
+async function sendeMailServer({ toEmail, toName, subject }) {
+  if (!MAIL_ENDPOINT) return false;
+  if (!toEmail) { alert('Bitte zuerst die E-Mail-Adresse des Kunden erfassen.'); return true; }
+  try {
+    if (typeof generateContract === 'function') generateContract();
+    const el = document.getElementById('contract-out');
+    const html = el?.innerHTML || '';
+    if (html.length < 20) { alert('Bitte zuerst die Vertragsvorschau öffnen.'); return true; }
+
+    // Vertrag als PDF erzeugen (falls Bibliothek geladen)
+    let pdfB64 = '';
+    if (typeof html2pdf !== 'undefined') {
+      try {
+        const opt = {
+          margin: 8,
+          image: { type: 'jpeg', quality: 0.95 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          pagebreak: { mode: ['css', 'legacy'] }
+        };
+        const uri = await html2pdf().set(opt).from(el).outputPdf('datauristring');
+        pdfB64 = (uri.split(',')[1]) || '';
+      } catch (e) { console.error('PDF-Erzeugung fehlgeschlagen, sende Text:', e); }
+    }
+
+    // Bei PDF: kurzes Anschreiben im Text; sonst ganzer Vertrag im Text (Fallback)
+    const bodyHtml = pdfB64
+      ? `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222">
+           <p>Guten Tag ${toName || ''}</p>
+           <p>herzlichen Dank für Ihr Vertrauen in Rekaj Reinigung. Im Anhang finden Sie Ihren
+           Reinigungsvertrag als PDF. Bitte prüfen Sie ihn in Ruhe – bei Fragen sind wir gerne für Sie da.</p>
+           <p>Freundliche Grüsse<br>Hanife Rekaj · Rekaj Reinigung<br>
+           info@rekaj-reinigung.ch · +41 79 171 11 31 · www.rekaj-reinigung.ch</p>
+         </div>`
+      : html;
+
+    const res = await fetch(MAIL_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: toEmail, customerName: toName || '', subject,
+        html: bodyHtml, pdf: pdfB64, pdfName: 'Reinigungsvertrag.pdf', token: MAIL_TOKEN
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.ok) {
+      alert('✅ Der Vertrag wurde an ' + toEmail + ' gesendet' + (pdfB64 ? ' (PDF im Anhang)' : '') +
+            '.\nEine Kopie ging an info@rekaj-reinigung.ch.');
+      return true;
+    }
+    throw new Error(data.error || ('HTTP ' + res.status));
+  } catch (err) {
+    console.error('Server-Versand fehlgeschlagen:', err);
+    return false;   // → EmailJS / Mailprogramm
+  }
+}
+
+function emailjsBereit() {
+  return typeof emailjs !== 'undefined'
+      && EMAILJS_CONFIG.PUBLIC_KEY  && EMAILJS_CONFIG.PUBLIC_KEY  !== '...'
+      && EMAILJS_CONFIG.SERVICE_ID  && EMAILJS_CONFIG.SERVICE_ID  !== '...'
+      && EMAILJS_CONFIG.TEMPLATE_ID && EMAILJS_CONFIG.TEMPLATE_ID !== '...';
+}
+
+if (typeof emailjs !== 'undefined' && EMAILJS_CONFIG.PUBLIC_KEY !== '...') {
+  try { emailjs.init({ publicKey: EMAILJS_CONFIG.PUBLIC_KEY }); } catch (e) {}
+}
+
+// Versendet automatisch via EmailJS; gibt true bei Erfolg zurück.
+// Bei Fehler oder fehlender Konfiguration → false (Aufrufer nutzt dann mailto).
+async function sendeMailAuto({ toEmail, toName, subject, message }) {
+  // 1. Direkter Server-Versand über Infomaniak (bevorzugt)
+  if (await sendeMailServer({ toEmail, toName, subject })) return true;
+  // 2. EmailJS (falls konfiguriert)
+  if (!emailjsBereit()) return false;
+  if (!toEmail) { alert('Bitte zuerst die E-Mail-Adresse des Kunden erfassen.'); return true; }
+  try {
+    await emailjs.send(EMAILJS_CONFIG.SERVICE_ID, EMAILJS_CONFIG.TEMPLATE_ID, {
+      to_email: toEmail,
+      to_name:  toName || '',
+      subject:  subject,
+      message:  message,
+      bcc:      EMAILJS_CONFIG.BCC || ''
+    });
+    alert('✅ E-Mail wurde erfolgreich an ' + toEmail + ' versendet.');
+    return true;
+  } catch (err) {
+    console.error('EmailJS-Fehler:', err);
+    alert('⚠️ Automatischer Versand fehlgeschlagen – es öffnet sich stattdessen dein Mailprogramm.\n\nDetails: ' + (err?.text || err?.message || err));
+    return false;
+  }
+}
+
 // ═══════════════════════════════════════════════════════════
 // DATA
 // ═══════════════════════════════════════════════════════════
@@ -2041,7 +2172,7 @@ function abschlussBestaetigen() {
   `;
 }
 
-function sendeEmail() {
+async function sendeEmail() {
   if (!window.sigData) return;
   const sigName  = window.sigData.name;
   const sigDatum = window.sigData.datum;
@@ -2054,8 +2185,8 @@ function sendeEmail() {
   const einsatzTxt = (document.getElementById('s_pereinsatz')?.textContent || '—').trim();
   const monatTxt   = (document.getElementById('s_permonat')?.textContent   || '—').trim();
 
-  const subject = encodeURIComponent('Ihr Reinigungsvertrag – Rekaj Reinigung');
-  const body = encodeURIComponent(
+  const subjectPlain = 'Ihr Reinigungsvertrag – Rekaj Reinigung';
+  const bodyPlain =
     'Guten Tag ' + kName + '\n\n' +
     'Herzlichen Dank für Ihr Vertrauen in Rekaj Reinigung!\n\n' +
     'Ihr Reinigungsvertrag wurde am ' + sigDatum + ' elektronisch abgeschlossen.\n\n' +
@@ -2066,24 +2197,28 @@ function sendeEmail() {
     'Vergütung/Einsatz:    ' + einsatzTxt + '\n' +
     'Monatliche Vergütung: ' + monatTxt + '\n' +
     '─────────────────────────────────────────────────\n\n' +
-    'Den vollständigen Vertrag erhalten Sie als PDF-Anhang zu dieser E-Mail\n' +
-    '(bitte das gespeicherte PDF noch an diese E-Mail anhängen, bevor Sie senden).\n\n' +
+    'Den vollständigen Vertrag erhalten Sie als PDF-Anhang zu dieser E-Mail.\n\n' +
     'Freundliche Grüsse\n' +
     'Hanife Rekaj\n' +
     'Rekaj Reinigung\n' +
     'Alpenstrasse 58, 3627 Heimberg\n' +
     'Tel: +41 79 171 11 31\n' +
-    'info@rekaj-reinigung.ch  |  www.rekaj-reinigung.ch'
-  );
+    'info@rekaj-reinigung.ch  |  www.rekaj-reinigung.ch';
 
+  // 1) Automatischer Versand via EmailJS (falls konfiguriert)
+  const auto = await sendeMailAuto({ toEmail: kEmail, toName: kName, subject: subjectPlain, message: bodyPlain });
+  if (auto) return;
+
+  // 2) Fallback: Mailprogramm öffnen
   const to = kEmail ? encodeURIComponent(kEmail) : '';
   window.location.href = 'mailto:' + to +
     '?cc=info%40rekaj-reinigung.ch' +
-    '&subject=' + subject +
-    '&body=' + body;
+    '&subject=' + encodeURIComponent(subjectPlain) +
+    '&body=' + encodeURIComponent(bodyPlain +
+      '\n\n(Bitte das gespeicherte PDF noch an diese E-Mail anhängen, bevor Sie senden.)');
 }
 
-function sendeBestaettigungsanfrage() {
+async function sendeBestaettigungsanfrage() {
   const sigName  = document.getElementById('email_sig_name').value.trim();
   const sigEmail = document.getElementById('email_sig_email').value.trim();
   if (!sigName) {
@@ -2108,8 +2243,8 @@ function sendeBestaettigungsanfrage() {
   const einsatzTxt = (document.getElementById('s_pereinsatz')?.textContent || '—').trim();
   const monatTxt   = (document.getElementById('s_permonat')?.textContent   || '—').trim();
 
-  const subject = encodeURIComponent('Reinigungsvertrag Rekaj Reinigung – Bitte bestätigen');
-  const body = encodeURIComponent(
+  const subjectPlain = 'Reinigungsvertrag Rekaj Reinigung – Bitte bestätigen';
+  const bodyPlain =
     'Guten Tag ' + sigName + '\n\n' +
     'Vielen Dank für das persönliche Gespräch!\n\n' +
     'Im Anhang finden Sie Ihren Reinigungsvertrag mit Rekaj Reinigung.\n' +
@@ -2133,17 +2268,21 @@ function sendeBestaettigungsanfrage() {
     'Rekaj Reinigung\n' +
     'Alpenstrasse 58, 3627 Heimberg\n' +
     'Tel: +41 79 171 11 31\n' +
-    'info@rekaj-reinigung.ch  |  www.rekaj-reinigung.ch\n\n' +
-    '(PDF-Anhang: Vertrag bitte vor dem Senden noch anhängen)'
-  );
+    'info@rekaj-reinigung.ch  |  www.rekaj-reinigung.ch';
 
-  window.open(
-    'mailto:' + encodeURIComponent(sigEmail) +
-    '?cc=info%40rekaj-reinigung.ch' +
-    '&subject=' + subject +
-    '&body=' + body,
-    '_blank'
-  );
+  // 1) Automatischer Versand via EmailJS (falls konfiguriert)
+  const auto = await sendeMailAuto({ toEmail: sigEmail, toName: sigName, subject: subjectPlain, message: bodyPlain });
+  if (!auto) {
+    // 2) Fallback: Mailprogramm öffnen
+    window.open(
+      'mailto:' + encodeURIComponent(sigEmail) +
+      '?cc=info%40rekaj-reinigung.ch' +
+      '&subject=' + encodeURIComponent(subjectPlain) +
+      '&body=' + encodeURIComponent(bodyPlain +
+        '\n\n(PDF-Anhang: Vertrag bitte vor dem Senden noch anhängen)'),
+      '_blank'
+    );
+  }
 
   closeAbschlussModal();
 
