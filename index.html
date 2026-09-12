@@ -817,6 +817,15 @@ input[readonly], input[disabled] { background: var(--light); color: var(--gray);
             <div style="font-size:12.5px;color:var(--gray);line-height:1.5">Kunde erhält den Vertrag per E-Mail und bestätigt durch Antwort. Ideal wenn keine Zeit für direkte Signatur.</div>
           </button>
         </div>
+        <div style="border-top:1px solid #e5e9f0;margin-top:18px;padding-top:16px">
+          <button onclick="erfasseBestehenden()" style="width:100%;border:2px dashed var(--gray);border-radius:10px;background:#fafbfc;padding:16px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;transition:background 0.15s" onmouseover="this.style.background='#f0f2f5'" onmouseout="this.style.background='#fafbfc'">
+            <div style="font-size:28px">📋</div>
+            <div>
+              <div style="font-weight:700;color:var(--navy);font-size:15px;margin-bottom:4px">Bestehenden Vertrag erfassen (ohne Versand)</div>
+              <div style="font-size:12.5px;color:var(--gray);line-height:1.5">Für bereits abgeschlossene Verträge: Speichert den vollständigen Vertrag (inkl. Räume &amp; Aufgaben) direkt als <strong>bestätigt</strong> – ohne E-Mail und ohne Signatur.</div>
+            </div>
+          </button>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="closeAbschlussModal()">Abbrechen</button>
@@ -2206,7 +2215,8 @@ async function zeitLadeVertraege() {
       <td>${escHtml(c.objekt_label||'')}</td>
       <td style="text-align:right">${c.betrag_monat>0?fmtCHF(+c.betrag_monat):'–'}</td>
       <td>${badge(c.status)}</td>
-      <td>${c.status!=='bestaetigt'
+      <td><button class="btn-mini" onclick="vAnsehen(${c.id})" title="Vertrag ansehen">👁 Ansehen</button>
+          ${c.status!=='bestaetigt'
             ? `<button class="btn-mini" onclick="vSetStatus(${c.id},'bestaetigt')">als bestätigt markieren</button>`
             : `<button class="btn-mini" onclick="vSetStatus(${c.id},'storniert')" title="stornieren">✕</button>`}</td>
     </tr>`).join('');
@@ -2216,6 +2226,40 @@ async function vSetStatus(id, status) {
   if (status==='storniert' && !confirm('Diesen Vertrag stornieren?')) return;
   try { await apiCall('set_status', { id, status }); zeitLadeVertraege(); await zeitLoadCustomers(); }
   catch(e){ alert('Statusänderung fehlgeschlagen'); }
+}
+
+// Gespeicherten Vertrag in neuem Fenster anzeigen
+async function vAnsehen(id) {
+  const w = window.open('', '_blank');
+  if (w) w.document.write('<!doctype html><meta charset="utf-8"><title>Vertrag wird geladen…</title>' +
+    '<body style="font-family:Arial;padding:40px;color:#555">Vertrag wird geladen…</body>');
+  try {
+    const d = await apiCall('get_contract', { id });
+    if (!d.ok) throw new Error(d.error || 'Vertrag nicht gefunden');
+    if (!d.html) {
+      if (w) w.document.body.innerHTML = '<div style="font-family:Arial;padding:40px">Für diesen Vertrag ist keine Vollansicht gespeichert.<br><br>' +
+        '<strong>Kunde:</strong> ' + escHtml(d.kunde||'') + '<br><strong>Objekt:</strong> ' + escHtml(d.objekt||'') + '</div>';
+      return;
+    }
+    if (w) {
+      w.document.open();
+      w.document.write('<!doctype html><html lang="de"><head><meta charset="utf-8">' +
+        '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+        '<title>Vertrag – ' + escHtml(d.kunde||'') + '</title>' +
+        '<style>body{margin:0;background:#eef1f6;font-family:Arial,Helvetica,sans-serif}' +
+        '.wrap{max-width:820px;margin:20px auto;background:#fff;padding:0;box-shadow:0 6px 30px rgba(0,0,0,.1)}' +
+        '@media print{body{background:#fff}.wrap{box-shadow:none;margin:0;max-width:none}.noprint{display:none}}' +
+        '.bar{position:sticky;top:0;background:#16233f;color:#fff;padding:10px 16px;display:flex;justify-content:space-between;align-items:center}' +
+        '.bar button{background:#fff;color:#16233f;border:0;border-radius:6px;padding:6px 14px;font-weight:700;cursor:pointer}</style>' +
+        '</head><body><div class="bar noprint"><span>Vertrag – ' + escHtml(d.kunde||'') + ' (' + escHtml(d.status||'') + ')</span>' +
+        '<button onclick="window.print()">🖨 Drucken / PDF</button></div>' +
+        '<div class="wrap">' + d.html + '</div></body></html>');
+      w.document.close();
+    }
+  } catch (e) {
+    if (w) w.document.body.innerHTML = '<div style="font-family:Arial;padding:40px;color:#c00">Fehler: ' + escHtml(e.message) + '</div>';
+    else alert('Fehler: ' + e.message);
+  }
 }
 
 // Einmaligen Auftrag anlegen (Schnell-Erfassung)
@@ -2367,9 +2411,10 @@ async function speichereVertrag(status) {
     const c = window._calc || {};
     const betrag = c.dispMonatBrutto || c.totalMonatBrutto || 0;
     const turnus = (document.getElementById('e_turnus')?.value) || '';
+    const html = (document.getElementById('contract-out')?.innerHTML) || '';
     return await apiCall('save_contract', {
       name, email: g('k_email'), phone: g('k_tel'),
-      objects: objekte, status: status || 'gesendet', betrag_monat: betrag, turnus
+      objects: objekte, status: status || 'gesendet', betrag_monat: betrag, turnus, html
     });
   } catch (e) { console.error('speichereVertrag', e); return null; }
 }
@@ -2434,6 +2479,32 @@ function showEmailPanel() {
   document.getElementById('modal-panel-auswahl').style.display = 'none';
   document.getElementById('modal-panel-sofort').style.display  = 'none';
   document.getElementById('modal-panel-email').style.display   = '';
+}
+
+// Bestehenden (bereits abgeschlossenen) Vertrag erfassen – ohne E-Mail/Signatur.
+async function erfasseBestehenden() {
+  const name = (document.getElementById('k_name')?.value || '').trim();
+  if (!name) {
+    alert('Bitte zuerst den Namen der Auftraggeberin / des Auftraggebers erfassen (Abschnitt 1).');
+    return;
+  }
+  if (!confirm('Diesen bestehenden Vertrag für »' + name + '« als BESTÄTIGT erfassen?\n\n' +
+               'Der vollständige Vertrag (inkl. Räume & Aufgaben) wird gespeichert – ohne E-Mail-Versand.')) return;
+
+  // Sicherstellen, dass der Vertrag gerendert ist (contract-out gefüllt)
+  if (typeof generateContract === 'function') { try { generateContract(); } catch (e) {} }
+
+  closeAbschlussModal();
+  const res = await speichereVertrag('bestaetigt');
+  if (res && res.ok) {
+    alert('✅ Vertrag für »' + name + '« wurde als bestätigt erfasst.\n\n' +
+          'Er erscheint jetzt in der Übersicht (Reiter »Zeit & Spesen«) und kann sofort ' +
+          'für die Zeiterfassung genutzt werden.');
+    if (typeof zeitLadeVertraege === 'function') { try { zeitLadeVertraege(); } catch (e) {} }
+  } else {
+    alert('⚠️ Der Vertrag konnte nicht gespeichert werden.\n\n' +
+          (res && res.error ? res.error : 'Bitte Internetverbindung prüfen und erneut versuchen.'));
+  }
 }
 
 function updateBestaetigenBtn() {
