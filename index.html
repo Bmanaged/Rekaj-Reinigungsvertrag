@@ -321,6 +321,7 @@ input[readonly], input[disabled] { background: var(--light); color: var(--gray);
 <div class="tabs">
   <button class="tab-btn active" onclick="switchTab('erfassung')">① Vertrag konfigurieren</button>
   <button class="tab-btn" onclick="switchTab('vertrag')">② Vertragsvorschau / Drucken</button>
+  <button class="tab-btn" onclick="switchTab('zeit')">③ Zeit &amp; Spesen</button>
 </div>
 
 <!-- ════════════════════════════════════════════════════════
@@ -689,6 +690,111 @@ input[readonly], input[disabled] { background: var(--light); color: var(--gray);
   </div>
 </div>
 
+<!-- ════════════════════════════════════════════════════════
+     TAB 3: ZEIT & SPESEN
+     ════════════════════════════════════════════════════════ -->
+<div id="tab-zeit" class="tab-pane">
+
+  <!-- Verträge & Status -->
+  <div class="section">
+    <div class="section-hdr" style="cursor:default"><span>Verträge &amp; Status</span></div>
+    <div class="section-body">
+      <p style="font-size:12px;color:var(--gray);margin:0 0 10px">
+        Alle Verträge mit Status. <strong>Entwurf/Gesendet</strong> = noch offen · <strong>Bestätigt</strong> = vom Kunden bestätigt (per Signatur oder Link) und für die Zeiterfassung nutzbar.
+      </p>
+      <div class="btn-row" style="margin:0 0 10px"><button class="btn btn-outline" onclick="zeitLadeVertraege()">↻ Aktualisieren</button></div>
+      <table class="svc-table" id="v_tabelle">
+        <thead><tr>
+          <th style="width:95px">Erstellt</th><th>Kunde</th><th>Objekt</th>
+          <th style="width:110px">Vergütung/Mt.</th><th style="width:130px">Status</th><th style="width:150px">Aktion</th>
+        </tr></thead>
+        <tbody id="v_tbody"><tr><td colspan="6" style="color:var(--gray)">Wird geladen …</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Einmaliger Auftrag -->
+  <div class="section">
+    <div class="section-hdr" style="cursor:default"><span>Einmaliger Auftrag (Schnell-Erfassung)</span></div>
+    <div class="section-body">
+      <p style="font-size:12px;color:var(--gray);margin:0 0 10px">
+        Für Aufträge ohne Vertrag: Kunde + Adresse eintragen – die km werden automatisch berechnet, danach direkt im Bereich „Zeit &amp; Spesen" nutzbar.
+      </p>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+        <div><label class="fl">Kundenname *</label><input type="text" id="e_kname" placeholder="Vor- und Nachname"></div>
+        <div><label class="fl">E-Mail (optional)</label><input type="text" id="e_kmail" placeholder="kunde@…"></div>
+        <div><label class="fl">Bezeichnung</label><input type="text" id="e_bez" placeholder="z. B. Umzugsreinigung"></div>
+        <div><label class="fl">Strasse / Nr.</label><input type="text" id="e_str" placeholder="Musterstrasse 1"></div>
+        <div><label class="fl">PLZ</label><input type="text" id="e_plz" placeholder="3600"></div>
+        <div><label class="fl">Ort</label><input type="text" id="e_ort" placeholder="Thun"></div>
+      </div>
+      <div class="btn-row" style="margin-top:12px"><button class="btn btn-primary" onclick="einmalSpeichern()">＋ Einmal-Auftrag anlegen</button></div>
+      <div id="e_msg" style="font-size:13px;margin-top:6px"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-hdr" style="cursor:default"><span>Zeit &amp; Spesen erfassen</span></div>
+    <div class="section-body">
+      <p style="font-size:12px;color:var(--gray);margin:0 0 12px">
+        Nur <strong>bestätigte</strong> Verträge / Einmal-Aufträge erscheinen hier. Wähle <strong>Kunde → Objekt</strong> –
+        die <strong>Kilometer sind bereits berechnet</strong>. Trage Stunden und Spesen ein und speichere den Einsatz.
+      </p>
+      <div class="grid2">
+        <div>
+          <label class="fl">Kunde</label>
+          <select id="z_kunde" onchange="zeitLoadObjects()" style="width:100%"><option value="">– lädt … –</option></select>
+        </div>
+        <div>
+          <label class="fl">Objekt</label>
+          <select id="z_objekt" onchange="zeitObjektGewaehlt()" style="width:100%"><option value="">– zuerst Kunde wählen –</option></select>
+        </div>
+      </div>
+      <div id="z_kmhint" style="font-size:12px;color:var(--navy);margin:6px 0 0"></div>
+
+      <div style="margin-top:16px;padding:14px;background:var(--light);border-radius:6px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+        <div><label class="fl">Datum</label><input type="date" id="z_datum"></div>
+        <div><label class="fl">Stunden</label><input type="number" id="z_stunden" value="0" min="0" step="0.25"></div>
+        <div><label class="fl">Kilometer</label><input type="number" id="z_km" value="0" min="0" step="0.1"></div>
+        <div><label class="fl">Spesen CHF</label><input type="number" id="z_spesen" value="0" min="0" step="0.5"></div>
+        <div style="grid-column:1/-1"><label class="fl">Notiz</label><input type="text" id="z_notiz" placeholder="z. B. Material, Parkgebühr, Sonderarbeit …" style="width:100%"></div>
+      </div>
+      <div class="btn-row" style="margin-top:12px">
+        <button class="btn btn-primary" onclick="zeitSpeichern()">＋ Einsatz speichern</button>
+        <button class="btn btn-outline" onclick="zeitLadeEintraege()">↻ Aktualisieren</button>
+      </div>
+      <div id="z_msg" style="font-size:13px;margin-top:8px"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-hdr" style="cursor:default"><span>Übersicht &amp; Abrechnung</span></div>
+    <div class="section-body">
+      <div class="grid2" style="align-items:end">
+        <div>
+          <label class="fl">Monat (leer = alle)</label>
+          <input type="month" id="z_monat" onchange="zeitLadeEintraege()">
+        </div>
+        <div class="btn-row" style="margin:0">
+          <button class="btn btn-outline" onclick="zeitCSV()">⬇ CSV exportieren</button>
+          <button class="btn btn-navy" onclick="window.print()">🖨 Drucken</button>
+        </div>
+      </div>
+      <div id="z_summe" style="margin:12px 0;font-weight:700;color:var(--navy)">–</div>
+      <table class="svc-table" id="z_tabelle" style="margin-top:6px">
+        <thead><tr>
+          <th style="width:110px">Datum</th><th>Objekt</th>
+          <th style="width:70px;text-align:right">Std.</th>
+          <th style="width:70px;text-align:right">km</th>
+          <th style="width:90px;text-align:right">Spesen</th>
+          <th>Notiz</th><th style="width:40px"></th>
+        </tr></thead>
+        <tbody id="z_tbody"><tr><td colspan="7" style="color:var(--gray)">Wähle oben einen Kunden.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════════════════════════════════════════════════
      ABSCHLUSS-MODAL
      ═══════════════════════════════════════════════════ -->
@@ -807,12 +913,14 @@ const EMAILJS_CONFIG = {
 // 2. Die vollständige URL dieser Datei hier eintragen:
 const MAIL_ENDPOINT = 'https://www.rekaj-reinigung.ch/send.php';
 const MAIL_TOKEN    = '';   // nur falls du in send.php einen $TOKEN gesetzt hast (identisch)
+const API_ENDPOINT  = 'https://www.rekaj-reinigung.ch/api.php';   // Zeit/Spesen-Modul (Datenbank)
+const CONFIRM_URL   = 'https://www.rekaj-reinigung.ch/confirm.php'; // Bestätigungsseite für Kunden
 // Solange leer, wird EmailJS bzw. das Mailprogramm verwendet.
 // ───────────────────────────────────────────────────────────
 
 // Versendet den Vertrag server-seitig über Infomaniak (send.php).
 // true = versendet/behandelt, false = nicht konfiguriert/fehlgeschlagen → nächster Weg.
-async function sendeMailServer({ toEmail, toName, subject }) {
+async function sendeMailServer({ toEmail, toName, subject, confirmLink }) {
   if (!MAIL_ENDPOINT) return false;
   if (!toEmail) { alert('Bitte zuerst die E-Mail-Adresse des Kunden erfassen.'); return true; }
   try {
@@ -837,12 +945,20 @@ async function sendeMailServer({ toEmail, toName, subject }) {
       } catch (e) { console.error('PDF-Erzeugung fehlgeschlagen, sende Text:', e); }
     }
 
+    // Bestätigungs-Button (nur wenn ein Link übergeben wurde)
+    const confirmBtn = confirmLink
+      ? `<p style="margin:18px 0"><a href="${confirmLink}"
+           style="background:#2e7d32;color:#fff;text-decoration:none;padding:12px 22px;border-radius:6px;font-weight:bold;display:inline-block">
+           ✅ Vertrag jetzt bestätigen</a></p>
+         <p style="font-size:12px;color:#666">Falls der Button nicht funktioniert, öffnen Sie diesen Link:<br>${confirmLink}</p>`
+      : '';
     // Bei PDF: kurzes Anschreiben im Text; sonst ganzer Vertrag im Text (Fallback)
     const bodyHtml = pdfB64
       ? `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222">
            <p>Guten Tag ${toName || ''}</p>
            <p>herzlichen Dank für Ihr Vertrauen in Rekaj Reinigung. Im Anhang finden Sie Ihren
-           Reinigungsvertrag als PDF. Bitte prüfen Sie ihn in Ruhe – bei Fragen sind wir gerne für Sie da.</p>
+           Reinigungsvertrag als PDF. Bitte prüfen Sie ihn in Ruhe${confirmLink ? ' und bestätigen Sie ihn mit einem Klick' : ''}.</p>
+           ${confirmBtn}
            <p>Freundliche Grüsse<br>Hanife Rekaj · Rekaj Reinigung<br>
            info@rekaj-reinigung.ch · +41 79 171 11 31 · www.rekaj-reinigung.ch</p>
          </div>`
@@ -882,9 +998,9 @@ if (typeof emailjs !== 'undefined' && EMAILJS_CONFIG.PUBLIC_KEY !== '...') {
 
 // Versendet automatisch via EmailJS; gibt true bei Erfolg zurück.
 // Bei Fehler oder fehlender Konfiguration → false (Aufrufer nutzt dann mailto).
-async function sendeMailAuto({ toEmail, toName, subject, message }) {
+async function sendeMailAuto({ toEmail, toName, subject, message, confirmLink }) {
   // 1. Direkter Server-Versand über Infomaniak (bevorzugt)
-  if (await sendeMailServer({ toEmail, toName, subject })) return true;
+  if (await sendeMailServer({ toEmail, toName, subject, confirmLink })) return true;
   // 2. EmailJS (falls konfiguriert)
   if (!emailjsBereit()) return false;
   if (!toEmail) { alert('Bitte zuerst die E-Mail-Adresse des Kunden erfassen.'); return true; }
@@ -2045,9 +2161,217 @@ function switchTab(t) {
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + t).classList.add('active');
-  const idx = t === 'erfassung' ? 0 : 1;
+  const idx = t === 'erfassung' ? 0 : (t === 'vertrag' ? 1 : 2);
   document.querySelectorAll('.tab-btn')[idx].classList.add('active');
   if (t === 'vertrag') generateContract();
+  if (t === 'zeit') zeitInit();
+}
+
+// ═══════════════════════════════════════════════════════════
+// ZEIT & SPESEN (Datenbank-Modul)
+// ═══════════════════════════════════════════════════════════
+async function apiCall(action, params = {}) {
+  const res = await fetch(API_ENDPOINT, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(Object.assign({ action }, params))
+  });
+  return res.json();
+}
+
+let _zInit = false;
+async function zeitInit() {
+  if (!document.getElementById('z_datum').value)
+    document.getElementById('z_datum').value = new Date().toISOString().slice(0,10);
+  if (_zInit) return;   // Listen nur einmal laden (Aktualisieren geht über Buttons)
+  _zInit = true;
+  zeitLadeVertraege();
+  await zeitLoadCustomers();
+}
+
+// Verträge & Status laden/anzeigen
+async function zeitLadeVertraege() {
+  const tb = document.getElementById('v_tbody');
+  try {
+    const d = await apiCall('list_contracts');
+    if (!d.ok) throw new Error(d.error);
+    if (!d.contracts.length) { tb.innerHTML = '<tr><td colspan="6" style="color:var(--gray)">Noch keine Verträge. Schliesse einen Vertrag ab (Reiter ②) oder lege unten einen Einmal-Auftrag an.</td></tr>'; return; }
+    const badge = s => {
+      const m = { entwurf:['Entwurf','#8a94a6'], gesendet:['Gesendet · wartet','#b7791f'], bestaetigt:['✅ Bestätigt','#2e7d32'], storniert:['Storniert','#c0392b'] };
+      const [txt,col] = m[s] || [s,'#555'];
+      return `<span style="background:${col};color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;white-space:nowrap">${txt}</span>`;
+    };
+    tb.innerHTML = d.contracts.map(c => `<tr>
+      <td>${fmtDate(c.erstellt)}</td>
+      <td>${escHtml(c.kunde_name)}${c.quelle==='einmalig'?' <span style="font-size:10px;color:var(--gray)">(Einmal)</span>':''}</td>
+      <td>${escHtml(c.objekt_label||'')}</td>
+      <td style="text-align:right">${c.betrag_monat>0?fmtCHF(+c.betrag_monat):'–'}</td>
+      <td>${badge(c.status)}</td>
+      <td>${c.status!=='bestaetigt'
+            ? `<button class="btn-mini" onclick="vSetStatus(${c.id},'bestaetigt')">als bestätigt markieren</button>`
+            : `<button class="btn-mini" onclick="vSetStatus(${c.id},'storniert')" title="stornieren">✕</button>`}</td>
+    </tr>`).join('');
+  } catch (e) { tb.innerHTML = `<tr><td colspan="6" style="color:#c00">Fehler: ${escHtml(e.message)}</td></tr>`; }
+}
+async function vSetStatus(id, status) {
+  if (status==='storniert' && !confirm('Diesen Vertrag stornieren?')) return;
+  try { await apiCall('set_status', { id, status }); zeitLadeVertraege(); await zeitLoadCustomers(); }
+  catch(e){ alert('Statusänderung fehlgeschlagen'); }
+}
+
+// Einmaligen Auftrag anlegen (Schnell-Erfassung)
+async function einmalSpeichern() {
+  const g = id => (document.getElementById(id)?.value || '').trim();
+  const msg = document.getElementById('e_msg');
+  const name = g('e_kname');
+  if (!name) { msg.style.color='#c00'; msg.textContent='Bitte einen Kundennamen eingeben.'; return; }
+  msg.style.color='var(--gray)'; msg.textContent='Wird angelegt, km werden berechnet …';
+  try {
+    const d = await apiCall('add_oneoff', { name, email:g('e_kmail'), bezeichnung:g('e_bez')||'Einmaliger Auftrag',
+      strasse:g('e_str'), plz:g('e_plz'), ort:g('e_ort') });
+    if (!d.ok) throw new Error(d.error);
+    msg.style.color='var(--green)';
+    msg.textContent = '✅ Einmal-Auftrag angelegt' + (d.km!=null && d.km!=='' ? ' (km: '+d.km+')' : '') + ' – jetzt unter „Zeit & Spesen" wählbar.';
+    ['e_kname','e_kmail','e_bez','e_str','e_plz','e_ort'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+    zeitLadeVertraege(); await zeitLoadCustomers();
+  } catch (e) { msg.style.color='#c00'; msg.textContent='Fehler: '+e.message; }
+}
+
+async function zeitLoadCustomers() {
+  const sel = document.getElementById('z_kunde');
+  try {
+    const d = await apiCall('list_customers', { confirmed_only: 1 });
+    if (!d.ok) throw new Error(d.error || 'Fehler');
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">– Kunde wählen –</option>' +
+      d.customers.map(c => `<option value="${c.id}">${escHtml(c.name)}${c.email ? ' ('+escHtml(c.email)+')' : ''}</option>`).join('');
+    if (cur) sel.value = cur;
+  } catch (e) {
+    sel.innerHTML = '<option value="">– Fehler beim Laden –</option>';
+    console.error('list_customers', e);
+  }
+}
+
+function escHtml(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+async function zeitLoadObjects() {
+  const cid = document.getElementById('z_kunde').value;
+  const sel = document.getElementById('z_objekt');
+  document.getElementById('z_kmhint').textContent = '';
+  if (!cid) { sel.innerHTML = '<option value="">– zuerst Kunde wählen –</option>'; zeitLadeEintraege(); return; }
+  try {
+    const d = await apiCall('list_objects', { customer_id: cid, confirmed_only: 1 });
+    if (!d.ok) throw new Error(d.error);
+    window._zObjects = d.objects || [];
+    sel.innerHTML = '<option value="">– Objekt wählen –</option>' +
+      window._zObjects.map(o => {
+        const label = (o.bezeichnung || o.art || 'Objekt') + (o.ort ? ' – ' + o.ort : '') +
+          (o.km != null ? ' (' + o.km + ' km)' : '');
+        return `<option value="${o.id}">${escHtml(label)}</option>`;
+      }).join('');
+  } catch (e) { sel.innerHTML = '<option value="">– Fehler –</option>'; console.error('list_objects', e); }
+  zeitLadeEintraege();
+}
+
+function zeitObjektGewaehlt() {
+  const oid = document.getElementById('z_objekt').value;
+  const o = (window._zObjects || []).find(x => String(x.id) === String(oid));
+  const hint = document.getElementById('z_kmhint');
+  if (o && o.km != null) {
+    document.getElementById('z_km').value = o.km;
+    hint.textContent = `Berechnete Distanz ab Heimberg: ${o.km} km (Hin- und Rückweg ggf. verdoppeln).`;
+  } else if (o) {
+    document.getElementById('z_km').value = 0;
+    hint.textContent = 'Für dieses Objekt sind noch keine km berechnet (Adresse prüfen).';
+  } else { hint.textContent = ''; }
+}
+
+async function zeitSpeichern() {
+  const oid = document.getElementById('z_objekt').value;
+  const msg = document.getElementById('z_msg');
+  if (!oid) { msg.style.color = '#c00'; msg.textContent = 'Bitte zuerst Kunde und Objekt wählen.'; return; }
+  const payload = {
+    object_id: oid,
+    datum:   document.getElementById('z_datum').value,
+    stunden: parseFloat(document.getElementById('z_stunden').value) || 0,
+    km:      parseFloat(document.getElementById('z_km').value) || 0,
+    spesen:  parseFloat(document.getElementById('z_spesen').value) || 0,
+    notiz:   document.getElementById('z_notiz').value || ''
+  };
+  try {
+    const d = await apiCall('add_entry', payload);
+    if (!d.ok) throw new Error(d.error);
+    msg.style.color = 'var(--green)'; msg.textContent = '✅ Einsatz gespeichert.';
+    document.getElementById('z_stunden').value = 0;
+    document.getElementById('z_spesen').value = 0;
+    document.getElementById('z_notiz').value = '';
+    zeitLadeEintraege();
+  } catch (e) { msg.style.color = '#c00'; msg.textContent = 'Fehler beim Speichern: ' + e.message; }
+}
+
+async function zeitLadeEintraege() {
+  const cid = document.getElementById('z_kunde').value;
+  const tb = document.getElementById('z_tbody');
+  const sum = document.getElementById('z_summe');
+  if (!cid) { tb.innerHTML = '<tr><td colspan="7" style="color:var(--gray)">Wähle oben einen Kunden.</td></tr>'; sum.textContent = '–'; return; }
+  try {
+    const d = await apiCall('list_entries', { customer_id: cid, month: document.getElementById('z_monat').value || '' });
+    if (!d.ok) throw new Error(d.error);
+    window._zEntries = d.entries || [];
+    if (!d.entries.length) { tb.innerHTML = '<tr><td colspan="7" style="color:var(--gray)">Noch keine Einsätze erfasst.</td></tr>'; }
+    else tb.innerHTML = d.entries.map(e => `<tr>
+        <td>${fmtDate(e.datum)}</td>
+        <td>${escHtml((e.bezeichnung||'Objekt') + (e.ort?' – '+e.ort:''))}</td>
+        <td style="text-align:right">${(+e.stunden).toFixed(2)}</td>
+        <td style="text-align:right">${(+e.km).toFixed(1)}</td>
+        <td style="text-align:right">${fmtCHF(+e.spesen)}</td>
+        <td style="font-size:12px">${escHtml(e.notiz||'')}</td>
+        <td style="text-align:center"><button class="btn-mini" title="Löschen" onclick="zeitDelEntry(${e.id})">✕</button></td>
+      </tr>`).join('');
+    const s = d.summe || {stunden:0,km:0,spesen:0};
+    sum.textContent = `Summe: ${(+s.stunden).toFixed(2)} Std.  ·  ${(+s.km).toFixed(1)} km  ·  Spesen ${fmtCHF(+s.spesen)}`;
+  } catch (e) { tb.innerHTML = `<tr><td colspan="7" style="color:#c00">Fehler: ${escHtml(e.message)}</td></tr>`; }
+}
+
+async function zeitDelEntry(id) {
+  if (!confirm('Diesen Einsatz wirklich löschen?')) return;
+  try { await apiCall('delete_entry', { id }); zeitLadeEintraege(); } catch(e){ alert('Löschen fehlgeschlagen'); }
+}
+
+function zeitCSV() {
+  const rows = window._zEntries || [];
+  if (!rows.length) { alert('Keine Einträge zum Exportieren.'); return; }
+  const head = ['Datum','Objekt','Ort','Stunden','km','Spesen','Notiz'];
+  const esc = v => '"' + String(v==null?'':v).replace(/"/g,'""') + '"';
+  const lines = [head.map(esc).join(';')].concat(rows.map(e =>
+    [fmtDate(e.datum), e.bezeichnung||'', e.ort||'', (+e.stunden).toFixed(2), (+e.km).toFixed(1), (+e.spesen).toFixed(2), e.notiz||''].map(esc).join(';')));
+  const kunde = document.getElementById('z_kunde').selectedOptions[0]?.textContent.replace(/[^A-Za-z0-9]+/g,'_') || 'Kunde';
+  const blob = new Blob(['﻿'+lines.join('\r\n')], { type:'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'Zeit_Spesen_'+kunde+'.csv'; a.click();
+}
+
+// Kunde + Objekte eines Vertrags in die Datenbank übernehmen (nach Abschluss)
+// Vertrag in der Datenbank speichern; status 'gesendet' oder 'bestaetigt'.
+// Gibt die API-Antwort zurück (u.a. token für den Bestätigungs-Link).
+async function speichereVertrag(status) {
+  try {
+    if (typeof API_ENDPOINT === 'undefined' || !API_ENDPOINT) return null;
+    const g = id => (document.getElementById(id)?.value || '').trim();
+    const name = g('k_name');
+    if (!name) return null;
+    const objekte = (typeof collectObjekte === 'function' ? collectObjekte() : []).map(o => ({
+      bezeichnung: o.bezeichnung || o.art || '', art: o.art || '',
+      zimmer: o.zimmer || 0, m2: o.m2 || 0,
+      strasse: o.strasse || '', plz: o.plz || '', ort: o.ort || ''
+    }));
+    const c = window._calc || {};
+    const betrag = c.dispMonatBrutto || c.totalMonatBrutto || 0;
+    const turnus = (document.getElementById('e_turnus')?.value) || '';
+    return await apiCall('save_contract', {
+      name, email: g('k_email'), phone: g('k_tel'),
+      objects: objekte, status: status || 'gesendet', betrag_monat: betrag, turnus
+    });
+  } catch (e) { console.error('speichereVertrag', e); return null; }
 }
 
 function toggleSection(hdr) {
@@ -2130,6 +2454,9 @@ function abschlussBestaetigen() {
 
   // Speichere Signaturdaten global für E-Mail-Funktionen
   window.sigData = { name: sigName, datum: sigDatum };
+
+  // Vertrag (unterschrieben) als "bestätigt" in der Datenbank speichern
+  speichereVertrag('bestaetigt');
 
   // ── Sig-Area im Vertrag aktualisieren ──
   const contractOut = document.getElementById('contract-out');
@@ -2232,6 +2559,10 @@ async function sendeBestaettigungsanfrage() {
     return;
   }
 
+  // Vertrag (per E-Mail zu bestätigen) speichern und Bestätigungs-Link erzeugen
+  const vertrag = await speichereVertrag('gesendet');
+  const confirmLink = (vertrag && vertrag.token) ? (CONFIRM_URL + '?t=' + vertrag.token) : '';
+
   const now = new Date();
   const d = now.toLocaleDateString('de-CH', { day:'2-digit', month:'2-digit', year:'numeric' });
   const t = now.toLocaleTimeString('de-CH', { hour:'2-digit', minute:'2-digit' });
@@ -2244,11 +2575,14 @@ async function sendeBestaettigungsanfrage() {
   const monatTxt   = (document.getElementById('s_permonat')?.textContent   || '—').trim();
 
   const subjectPlain = 'Reinigungsvertrag Rekaj Reinigung – Bitte bestätigen';
+  const bestaetigungsText = confirmLink
+    ? ('ZUR BESTÄTIGUNG: Bitte bestätigen Sie den Vertrag mit einem Klick:\n' + confirmLink + '\n\n')
+    : ('ZUR BESTÄTIGUNG: Bitte antworten Sie auf diese E-Mail mit folgendem Text:\n  «Ich, ' + sigName + ', habe den Reinigungsvertrag gelesen und akzeptiere alle Bedingungen verbindlich.»\n\n');
   const bodyPlain =
     'Guten Tag ' + sigName + '\n\n' +
     'Vielen Dank für das persönliche Gespräch!\n\n' +
-    'Im Anhang finden Sie Ihren Reinigungsvertrag mit Rekaj Reinigung.\n' +
-    'Bitte lesen Sie den Vertrag durch und bestätigen Sie diesen per Antwort-E-Mail.\n\n' +
+    'Im Anhang finden Sie Ihren Reinigungsvertrag mit Rekaj Reinigung als PDF.\n' +
+    'Bitte lesen Sie den Vertrag durch und bestätigen Sie ihn.\n\n' +
     '── Vertrags-Zusammenfassung ─────────────────────\n' +
     'Auftraggeber/in:      ' + sigName + '\n' +
     'Rechnungsadresse:     ' + kStr + ', ' + kPlz + ' ' + kOrt + '\n' +
@@ -2257,11 +2591,7 @@ async function sendeBestaettigungsanfrage() {
     'Monatliche Vergütung: ' + monatTxt + '\n' +
     'Erstellt am:          ' + sigDatum + '\n' +
     '─────────────────────────────────────────────────\n\n' +
-    'ZUR BESTÄTIGUNG: Bitte antworten Sie auf diese E-Mail mit folgendem Text:\n\n' +
-    '  «Ich, ' + sigName + ', habe den Reinigungsvertrag mit Rekaj Reinigung\n' +
-    '   vollständig gelesen und akzeptiere alle Bedingungen verbindlich.»\n\n' +
-    'Sobald Ihre Bestätigung eingegangen ist, erhalten Sie eine Kopie des\n' +
-    'unterzeichneten Vertrags.\n\n' +
+    bestaetigungsText +
     'Bei Fragen stehe ich Ihnen gerne zur Verfügung.\n\n' +
     'Freundliche Grüsse\n' +
     'Hanife Rekaj\n' +
@@ -2270,8 +2600,8 @@ async function sendeBestaettigungsanfrage() {
     'Tel: +41 79 171 11 31\n' +
     'info@rekaj-reinigung.ch  |  www.rekaj-reinigung.ch';
 
-  // 1) Automatischer Versand via EmailJS (falls konfiguriert)
-  const auto = await sendeMailAuto({ toEmail: sigEmail, toName: sigName, subject: subjectPlain, message: bodyPlain });
+  // 1) Automatischer Versand (Server/EmailJS) – mit Bestätigungs-Link
+  const auto = await sendeMailAuto({ toEmail: sigEmail, toName: sigName, subject: subjectPlain, message: bodyPlain, confirmLink });
   if (!auto) {
     // 2) Fallback: Mailprogramm öffnen
     window.open(
