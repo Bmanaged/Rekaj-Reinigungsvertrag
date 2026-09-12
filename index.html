@@ -856,7 +856,7 @@ input[readonly], input[disabled] { background: var(--light); color: var(--gray);
       <div class="modal-hdr">✉️ Bestätigung per E-Mail senden</div>
       <div class="modal-body">
         <p style="margin-bottom:18px;line-height:1.55;color:#333;font-size:13.5px">
-          Der Kunde erhält eine E-Mail mit dem Vertrag und einer Bestätigungsanfrage. Sobald er antwortet, gilt der Vertrag als angenommen.
+          Der Kunde erhält eine E-Mail mit dem Vertrag als PDF und einem Bestätigungs-Button. Sobald er darauf klickt, wird der Vertrag automatisch auf „bestätigt" gesetzt.
         </p>
         <div class="grid2" style="margin-bottom:18px">
           <div>
@@ -869,12 +869,12 @@ input[readonly], input[disabled] { background: var(--light); color: var(--gray);
           </div>
         </div>
         <div style="font-size:11.5px;color:var(--gray);background:#fffbea;padding:12px 14px;border-radius:4px;line-height:1.6;border:1px solid #e8d87a">
-          💡 Nach Klick auf «E-Mail vorbereiten» öffnet sich dein E-Mail-Programm mit dem vorbereiteten Text. PDF des Vertrags bitte noch manuell anhängen, bevor du die E-Mail absendest.
+          💡 Der Vertrag wird automatisch als E-Mail versendet – mit dem PDF im Anhang und einem Bestätigungs-Button für den Kunden (Absender: info@rekaj-reinigung.ch, Kopie an dich). Nichts muss von Hand angehängt werden.
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="showAuswahlPanel()">← Zurück</button>
-        <button class="btn btn-primary" onclick="sendeBestaettigungsanfrage()">✉️ E-Mail vorbereiten &amp; senden</button>
+        <button class="btn btn-primary" onclick="sendeBestaettigungsanfrage()">✉️ Vertrag jetzt senden</button>
       </div>
     </div>
 
