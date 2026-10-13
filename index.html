@@ -746,8 +746,10 @@ input[readonly], input[disabled] { background: var(--light); color: var(--gray);
           <select id="z_kunde" onchange="zeitLoadObjects()" style="width:100%"><option value="">– lädt … –</option></select>
         </div>
         <div>
-          <label class="fl">Objekt</label>
-          <select id="z_objekt" onchange="zeitObjektGewaehlt()" style="width:100%"><option value="">– zuerst Kunde wählen –</option></select>
+          <label class="fl">Objekt(e) <span style="font-weight:400;color:var(--gray)">– mehrere möglich</span></label>
+          <div id="z_objekt_box" style="border:1px solid #cbd3df;border-radius:6px;padding:6px 8px;max-height:150px;overflow:auto;background:#fff;min-height:40px">
+            <span style="color:var(--gray);font-size:13px">– zuerst Kunde wählen –</span>
+          </div>
         </div>
       </div>
       <div id="z_kmhint" style="font-size:12px;color:var(--navy);margin:6px 0 0"></div>
@@ -2311,36 +2313,67 @@ async function zeitLoadCustomers() {
 
 function escHtml(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
+function zObjektLabel(o){ return (o.bezeichnung || o.art || 'Objekt') + (o.ort ? ' – ' + o.ort : ''); }
+function zCheckedObjIds(){ return [...document.querySelectorAll('#z_objekt_box input[type=checkbox]:checked')].map(c => c.value); }
+
 async function zeitLoadObjects() {
   const cid = document.getElementById('z_kunde').value;
-  const sel = document.getElementById('z_objekt');
+  const box = document.getElementById('z_objekt_box');
   document.getElementById('z_kmhint').textContent = '';
-  if (!cid) { sel.innerHTML = '<option value="">– zuerst Kunde wählen –</option>'; zeitLadeEintraege(); return; }
+  if (!cid) { box.innerHTML = '<span style="color:var(--gray);font-size:13px">– zuerst Kunde wählen –</span>'; window._zObjects = []; zeitLadeEintraege(); return; }
   try {
     const d = await apiCall('list_objects', { customer_id: cid, confirmed_only: 1 });
     if (!d.ok) throw new Error(d.error);
     window._zObjects = d.objects || [];
-    sel.innerHTML = '<option value="">– Objekt wählen –</option>' +
-      window._zObjects.map(o => {
-        const label = (o.bezeichnung || o.art || 'Objekt') + (o.ort ? ' – ' + o.ort : '') +
-          (o.km != null ? ' (' + o.km + ' km)' : '');
-        return `<option value="${o.id}">${escHtml(label)}</option>`;
+    if (!window._zObjects.length) {
+      box.innerHTML = '<span style="color:var(--gray);font-size:13px">Keine bestätigten Objekte für diesen Kunden.</span>';
+    } else {
+      box.innerHTML = window._zObjects.map(o => {
+        const label = zObjektLabel(o) + (o.km != null ? ' (' + o.km + ' km)' : '');
+        return `<label style="display:flex;align-items:center;gap:8px;padding:4px 2px;font-size:14px;cursor:pointer">
+          <input type="checkbox" value="${o.id}" style="width:16px;height:16px;cursor:pointer" onchange="zeitObjekteGewaehlt()">
+          <span>${escHtml(label)}</span></label>`;
       }).join('');
-  } catch (e) { sel.innerHTML = '<option value="">– Fehler –</option>'; console.error('list_objects', e); }
+    }
+  } catch (e) { box.innerHTML = '<span style="color:#c00;font-size:13px">– Fehler –</span>'; console.error('list_objects', e); }
   zeitLadeEintraege();
 }
 
-function zeitObjektGewaehlt() {
-  const oid = document.getElementById('z_objekt').value;
-  const o = (window._zObjects || []).find(x => String(x.id) === String(oid));
+async function zeitObjekteGewaehlt() {
+  const ids = zCheckedObjIds();
   const hint = document.getElementById('z_kmhint');
-  if (o && o.km != null) {
-    document.getElementById('z_km').value = o.km;
-    hint.textContent = `Berechnete Distanz ab Heimberg: ${o.km} km (Hin- und Rückweg ggf. verdoppeln).`;
-  } else if (o) {
-    document.getElementById('z_km').value = 0;
-    hint.textContent = 'Für dieses Objekt sind noch keine km berechnet (Adresse prüfen).';
-  } else { hint.textContent = ''; }
+  hint.style.color = 'var(--navy)';
+  if (!ids.length) { hint.textContent = ''; return; }
+  const objs = (window._zObjects || []).filter(o => ids.includes(String(o.id)));
+  // Ein Objekt: gespeicherte Distanz (einfacher Weg)
+  if (ids.length === 1) {
+    const o = objs[0];
+    if (o && o.km != null) {
+      document.getElementById('z_km').value = o.km;
+      hint.textContent = `Distanz ab Heimberg: ${o.km} km (einfacher Weg – Hin-/Rückweg ggf. verdoppeln).`;
+    } else {
+      document.getElementById('z_km').value = 0;
+      hint.textContent = 'Für dieses Objekt sind noch keine km berechnet (Adresse prüfen).';
+    }
+    return;
+  }
+  // Mehrere Objekte: echte Rundfahrt berechnen (Heimberg → alle Objekte → zurück)
+  hint.textContent = '🔄 Rundfahrt wird berechnet …';
+  try {
+    const d = await apiCall('route_multi', { object_ids: ids.map(Number) });
+    if (d.ok && d.km != null) {
+      document.getElementById('z_km').value = d.km;
+      let t = `Rundfahrt Heimberg → ${objs.length} Objekte → zurück: ${d.km} km`;
+      if (d.missing && d.missing.length) { hint.style.color = '#b7791f'; t += ` ⚠️ ${d.missing.length} Objekt-Adresse nicht gefunden – km prüfen`; }
+      hint.textContent = t;
+    } else {
+      hint.style.color = '#b7791f';
+      hint.textContent = 'Strecke konnte nicht automatisch berechnet werden – bitte km manuell eintragen.';
+    }
+  } catch (e) {
+    hint.style.color = '#b7791f';
+    hint.textContent = 'Streckenberechnung fehlgeschlagen – bitte km manuell eintragen.';
+  }
 }
 
 // Kleinbeleg-Bild komprimieren (max 1400px, JPEG) und als Data-URL zwischenspeichern
@@ -2376,11 +2409,14 @@ function zeitBelegGewaehlt(input) {
 }
 
 async function zeitSpeichern() {
-  const oid = document.getElementById('z_objekt').value;
   const msg = document.getElementById('z_msg');
-  if (!oid) { msg.style.color = '#c00'; msg.textContent = 'Bitte zuerst Kunde und Objekt wählen.'; return; }
+  const ids = zCheckedObjIds();
+  if (!ids.length) { msg.style.color = '#c00'; msg.textContent = 'Bitte zuerst Kunde und mindestens ein Objekt wählen.'; return; }
+  const objs = (window._zObjects || []).filter(o => ids.includes(String(o.id)));
+  const olabel = objs.map(zObjektLabel).join(' + ');
   const payload = {
-    object_id: oid,
+    object_id: ids[0],                               // Haupt-Objekt (Kunden-Zuordnung)
+    objekt_label: ids.length > 1 ? olabel : '',      // bei mehreren: kombinierte Bezeichnung
     datum:   document.getElementById('z_datum').value,
     stunden: parseFloat(document.getElementById('z_stunden').value) || 0,
     km:      parseFloat(document.getElementById('z_km').value) || 0,
@@ -2416,7 +2452,7 @@ async function zeitLadeEintraege() {
     if (!d.entries.length) { tb.innerHTML = '<tr><td colspan="9" style="color:var(--gray)">Noch keine Einsätze erfasst.</td></tr>'; }
     else tb.innerHTML = d.entries.map(e => `<tr>
         <td>${fmtDate(e.datum)}</td>
-        <td>${escHtml((e.bezeichnung||'Objekt') + (e.ort?' – '+e.ort:''))}</td>
+        <td>${escHtml(e.objekt_label || ((e.bezeichnung||'Objekt') + (e.ort?' – '+e.ort:'')))}</td>
         <td style="text-align:right">${(+e.stunden).toFixed(2)}</td>
         <td style="text-align:right">${(+e.km).toFixed(1)}</td>
         <td style="text-align:right">${fmtCHF(+e.spesen)}</td>
@@ -2469,7 +2505,7 @@ function zeitCSV() {
   const head = ['Datum','Objekt','Ort','Stunden','km','Spesen','an Kunden verrechenbar','Beleg','Notiz'];
   const esc = v => '"' + String(v==null?'':v).replace(/"/g,'""') + '"';
   const lines = [head.map(esc).join(';')].concat(rows.map(e =>
-    [fmtDate(e.datum), e.bezeichnung||'', e.ort||'', (+e.stunden).toFixed(2), (+e.km).toFixed(1), (+e.spesen).toFixed(2),
+    [fmtDate(e.datum), e.objekt_label||e.bezeichnung||'', e.ort||'', (+e.stunden).toFixed(2), (+e.km).toFixed(1), (+e.spesen).toFixed(2),
      (+e.verrechenbar)?'ja':'nein', (+e.hat_beleg)?'ja':'nein', e.notiz||''].map(esc).join(';')));
   const kunde = document.getElementById('z_kunde').selectedOptions[0]?.textContent.replace(/[^A-Za-z0-9]+/g,'_') || 'Kunde';
   const blob = new Blob(['﻿'+lines.join('\r\n')], { type:'text/csv;charset=utf-8' });
