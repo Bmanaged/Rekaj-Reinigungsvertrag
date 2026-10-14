@@ -1164,6 +1164,39 @@ function init() {
   onVergtyp();
   onAbAktiv();
   recalc();
+  window._editId = null;
+  // Leeren Grundzustand des Konfigurators sichern (für "neuer Vertrag" / Abbrechen)
+  window._blankKonfig = snapshotKonfig();
+}
+
+// ── Konfigurator-Zustand sichern/wiederherstellen (für Bearbeiten) ──
+// Nutzt Inline-Handler; Werte werden in Attribute gespiegelt, damit innerHTML sie behält.
+function snapshotKonfig() {
+  const src = document.getElementById('tab-erfassung');
+  if (!src) return '';
+  const clone = src.cloneNode(true);
+  const banner = clone.querySelector('#edit-banner'); if (banner) banner.remove();
+  const S = src.querySelectorAll('input,select,textarea');
+  const C = clone.querySelectorAll('input,select,textarea');
+  for (let i = 0; i < S.length; i++) {
+    const s = S[i], c = C[i]; if (!c) continue;
+    const type = (s.type || '').toLowerCase();
+    if (s.tagName === 'INPUT') {
+      if (type === 'checkbox' || type === 'radio') { if (s.checked) c.setAttribute('checked',''); else c.removeAttribute('checked'); }
+      else c.setAttribute('value', s.value);
+    } else if (s.tagName === 'TEXTAREA') { c.textContent = s.value; }
+    else if (s.tagName === 'SELECT') { [...c.options].forEach((o,oi) => { if (oi === s.selectedIndex) o.setAttribute('selected',''); else o.removeAttribute('selected'); }); }
+  }
+  return clone.innerHTML;
+}
+function restoreKonfig(html) {
+  const c = document.getElementById('tab-erfassung');
+  if (!c || !html) return;
+  c.innerHTML = html;
+  try { onVergtyp(); } catch(e) {}
+  try { onAbAktiv(); } catch(e) {}
+  try { updateRoomCount(); } catch(e) {}
+  try { recalc(); } catch(e) {}
 }
 
 function buildSvcTable() {
@@ -2233,7 +2266,8 @@ async function zeitLadeVertraege() {
       <td>${badge(c.status)}</td>
       <td><button class="btn-mini" onclick="vAnsehen(${c.id})" title="Vertrag ansehen">👁 Ansehen</button>
           ${c.status!=='bestaetigt'
-            ? `<button class="btn-mini" onclick="vSetStatus(${c.id},'bestaetigt')">als bestätigt markieren</button>`
+            ? `<button class="btn-mini" onclick="vBearbeiten(${c.id})" title="Vertrag anpassen">✏️ Bearbeiten</button>
+               <button class="btn-mini" onclick="vSetStatus(${c.id},'bestaetigt')">als bestätigt markieren</button>`
             : `<button class="btn-mini" onclick="vSetStatus(${c.id},'storniert')" title="stornieren">✕</button>`}</td>
     </tr>`).join('');
   } catch (e) { tb.innerHTML = `<tr><td colspan="6" style="color:#c00">Fehler: ${escHtml(e.message)}</td></tr>`; }
@@ -2242,6 +2276,61 @@ async function vSetStatus(id, status) {
   if (status==='storniert' && !confirm('Diesen Vertrag stornieren?')) return;
   try { await apiCall('set_status', { id, status }); zeitLadeVertraege(); await zeitLoadCustomers(); }
   catch(e){ alert('Statusänderung fehlgeschlagen'); }
+}
+
+// Unbestätigten Vertrag zum Bearbeiten in den Konfigurator laden
+async function vBearbeiten(id) {
+  try {
+    const d = await apiCall('get_contract', { id });
+    if (!d.ok) throw new Error(d.error || 'Vertrag nicht gefunden');
+    if (d.status === 'bestaetigt') { alert('Dieser Vertrag ist bereits bestätigt und kann nicht mehr bearbeitet werden.'); return; }
+    if (!d.form_html) {
+      alert('Dieser Vertrag wurde noch ohne Bearbeitungs-Funktion gespeichert und kann nicht nachbearbeitet werden.\n\n' +
+            'Nur Verträge, die ab jetzt neu erfasst werden, lassen sich später anpassen.');
+      return;
+    }
+    restoreKonfig(d.form_html);
+    window._editId = id;
+    window._editStatus = d.status || 'gesendet';
+    // Bearbeitungs-Banner oben im Konfigurator einsetzen
+    const bar = document.createElement('div');
+    bar.id = 'edit-banner';
+    bar.style.cssText = 'position:sticky;top:0;z-index:20;display:flex;flex-wrap:wrap;align-items:center;gap:10px;' +
+      'background:#fff7e6;border:1px solid #e6c15a;border-radius:8px;padding:10px 14px;margin-bottom:14px';
+    bar.innerHTML = '<span style="font-weight:700;color:#8a5a00">✏️ Bearbeitungsmodus – Vertrag #' + id +
+      ' (' + escHtml(d.kunde || '') + ')</span>' +
+      '<span style="flex:1;min-width:120px;font-size:12.5px;color:#8a5a00">Passe die Angaben an und speichere.</span>' +
+      '<button class="btn btn-primary" style="padding:6px 14px" onclick="speichereBearbeitung()">💾 Änderungen speichern</button>' +
+      '<button class="btn btn-outline" style="padding:6px 14px" onclick="editAbbrechen()">Abbrechen</button>';
+    const cont = document.getElementById('tab-erfassung');
+    cont.insertAdjacentElement('afterbegin', bar);
+    switchTab('erfassung');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch (e) { alert('Konnte Vertrag nicht laden: ' + e.message); }
+}
+
+async function speichereBearbeitung() {
+  if (!window._editId) return;
+  const btns = document.querySelectorAll('#edit-banner button');
+  btns.forEach(b => b.disabled = true);
+  const res = await speichereVertrag(window._editStatus || 'gesendet');
+  if (res && res.ok) {
+    const idSaved = window._editId;
+    editAbbrechen(true);            // Bearbeitungsmodus beenden + Formular zurücksetzen
+    switchTab('zeit');
+    try { await zeitLadeVertraege(); } catch(e) {}
+    alert('✅ Änderungen gespeichert (Vertrag #' + idSaved + ').');
+  } else {
+    btns.forEach(b => b.disabled = false);
+    alert('⚠️ Speichern fehlgeschlagen: ' + (res && res.error ? res.error : 'Bitte erneut versuchen.'));
+  }
+}
+
+function editAbbrechen(silent) {
+  window._editId = null; window._editStatus = null;
+  const bar = document.getElementById('edit-banner'); if (bar) bar.remove();
+  if (window._blankKonfig) restoreKonfig(window._blankKonfig);   // zurück auf leeren Konfigurator
+  if (!silent) switchTab('zeit');
 }
 
 // Gespeicherten Vertrag in neuem Fenster anzeigen
@@ -2522,6 +2611,9 @@ async function speichereVertrag(status) {
     const g = id => (document.getElementById(id)?.value || '').trim();
     const name = g('k_name');
     if (!name) return null;
+    // Vorschau + Berechnung frisch erzeugen (falls direkt aus Reiter ① gespeichert wird)
+    try { if (typeof recalc === 'function') recalc(); } catch(e) {}
+    try { if (typeof generateContract === 'function') generateContract(); } catch(e) {}
     const objekte = (typeof collectObjekte === 'function' ? collectObjekte() : []).map(o => ({
       bezeichnung: o.bezeichnung || o.art || '', art: o.art || '',
       zimmer: o.zimmer || 0, m2: o.m2 || 0,
@@ -2531,10 +2623,14 @@ async function speichereVertrag(status) {
     const betrag = c.dispMonatBrutto || c.totalMonatBrutto || 0;
     const turnus = (document.getElementById('e_turnus')?.value) || '';
     const html = (document.getElementById('contract-out')?.innerHTML) || '';
-    return await apiCall('save_contract', {
+    const form_html = (typeof snapshotKonfig === 'function') ? snapshotKonfig() : '';
+    const payload = {
       name, email: g('k_email'), phone: g('k_tel'),
-      objects: objekte, status: status || 'gesendet', betrag_monat: betrag, turnus, html
-    });
+      objects: objekte, status: status || 'gesendet', betrag_monat: betrag, turnus, html, form_html
+    };
+    // Bearbeitungsmodus: bestehenden Vertrag aktualisieren statt neu anlegen
+    if (window._editId) { payload.id = window._editId; return await apiCall('update_contract', payload); }
+    return await apiCall('save_contract', payload);
   } catch (e) { console.error('speichereVertrag', e); return null; }
 }
 
