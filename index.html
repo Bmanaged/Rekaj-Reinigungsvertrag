@@ -2284,12 +2284,18 @@ async function vBearbeiten(id) {
     const d = await apiCall('get_contract', { id });
     if (!d.ok) throw new Error(d.error || 'Vertrag nicht gefunden');
     if (d.status === 'bestaetigt') { alert('Dieser Vertrag ist bereits bestätigt und kann nicht mehr bearbeitet werden.'); return; }
-    if (!d.form_html) {
-      alert('Dieser Vertrag wurde noch ohne Bearbeitungs-Funktion gespeichert und kann nicht nachbearbeitet werden.\n\n' +
-            'Nur Verträge, die ab jetzt neu erfasst werden, lassen sich später anpassen.');
-      return;
+    let altModus = false;
+    if (d.form_html) {
+      restoreKonfig(d.form_html);                       // voller Snapshot – 1:1 zurückladen
+    } else {
+      // Alter Vertrag ohne Snapshot: Kundendaten + Objekt vorausfüllen, Rest neu erfassen
+      if (!confirm('Dieser Vertrag wurde vor der Bearbeiten-Funktion erstellt – es gibt keinen vollständigen Formular-Stand.\n\n' +
+                   'Kundendaten und Objekt(e) werden vorausgefüllt. Räume und Leistungen bitte neu auswählen.\n' +
+                   'Beim Speichern wird der bestehende Vertrag #' + id + ' überschrieben (kein Duplikat).\n\nFortfahren?')) return;
+      restoreKonfig(window._blankKonfig);               // frischer Konfigurator
+      prefillFromContract(d);                           // Kunde + Objekte eintragen
+      altModus = true;
     }
-    restoreKonfig(d.form_html);
     window._editId = id;
     window._editStatus = d.status || 'gesendet';
     // Bearbeitungs-Banner oben im Konfigurator einsetzen
@@ -2299,7 +2305,9 @@ async function vBearbeiten(id) {
       'background:#fff7e6;border:1px solid #e6c15a;border-radius:8px;padding:10px 14px;margin-bottom:14px';
     bar.innerHTML = '<span style="font-weight:700;color:#8a5a00">✏️ Bearbeitungsmodus – Vertrag #' + id +
       ' (' + escHtml(d.kunde || '') + ')</span>' +
-      '<span style="flex:1;min-width:120px;font-size:12.5px;color:#8a5a00">Passe die Angaben an und speichere.</span>' +
+      '<span style="flex:1;min-width:120px;font-size:12.5px;color:#8a5a00">' +
+        (altModus ? 'Alter Vertrag – Kunde/Objekt vorausgefüllt. Räume &amp; Leistungen bitte neu wählen, dann speichern.'
+                  : 'Passe die Angaben an und speichere.') + '</span>' +
       '<button class="btn btn-primary" style="padding:6px 14px" onclick="speichereBearbeitung()">💾 Änderungen speichern</button>' +
       '<button class="btn btn-outline" style="padding:6px 14px" onclick="editAbbrechen()">Abbrechen</button>';
     const cont = document.getElementById('tab-erfassung');
@@ -2331,6 +2339,36 @@ function editAbbrechen(silent) {
   const bar = document.getElementById('edit-banner'); if (bar) bar.remove();
   if (window._blankKonfig) restoreKonfig(window._blankKonfig);   // zurück auf leeren Konfigurator
   if (!silent) switchTab('zeit');
+}
+
+// Kundendaten + Objekte eines (alten) Vertrags in den frischen Konfigurator eintragen
+function prefillFromContract(d) {
+  const set = (id, v) => { const e = document.getElementById(id); if (e) e.value = v || ''; };
+  set('k_name', d.kunde); set('k_email', d.email); set('k_tel', d.phone);
+  const objs = Array.isArray(d.objects) ? d.objects : [];
+  if (!objs.length) { try { recalc(); } catch(e){} return; }
+  // Objektadresse(n) abweichend behandeln, damit Adressfelder sichtbar sind
+  const idc = document.getElementById('o_identisch');
+  if (idc) { idc.checked = false; try { toggleObjektIdentisch(); } catch(e){} }
+  const list = document.getElementById('objekt-liste');
+  if (list) {
+    list.innerHTML = '';
+    objs.forEach(() => list.insertAdjacentHTML('beforeend', objektRowHtml()));
+    try { renumberObjekte(); } catch(e){}
+    const rows = [...list.querySelectorAll('.objekt-item')];
+    objs.forEach((o, i) => {
+      const it = rows[i]; if (!it) return;
+      const q = c => it.querySelector(c);
+      if (q('.o_art') && o.art) { const s = q('.o_art'); if ([...s.options].some(op => op.value === o.art)) s.value = o.art; }
+      if (q('.o_bez'))    q('.o_bez').value    = o.bezeichnung || '';
+      if (q('.o_zimmer')) q('.o_zimmer').value = (o.zimmer != null ? o.zimmer : 0);
+      if (q('.o_m2'))     q('.o_m2').value     = (o.m2 != null ? o.m2 : 0);
+      if (q('.o_str'))    q('.o_str').value    = o.strasse || '';
+      if (q('.o_plz'))    q('.o_plz').value    = o.plz || '';
+      if (q('.o_ort'))    q('.o_ort').value    = o.ort || '';
+    });
+  }
+  try { recalc(); } catch(e){}
 }
 
 // Gespeicherten Vertrag in neuem Fenster anzeigen
